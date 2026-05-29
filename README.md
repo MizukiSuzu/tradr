@@ -273,7 +273,7 @@ export const useStore = create<PortfolioStore>()(
 )
 ```
 - `create<PortfolioStore>()` — creates a Zustand store typed to our interface
-- `persist(...)` — wraps the store so it auto-saves to localStorage under the key `'TRADR-portfolio'`
+- `persist(...)` — wraps the store so it auto-saves to localStorage under the key `'tradr-portfolio'`
 - `set` — a function to update store values
 - `get` — a function to read the current store values (useful inside actions)
 
