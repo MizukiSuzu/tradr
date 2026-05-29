@@ -1,6 +1,31 @@
-# TradeVault — Full Code Explanation
+# TRADR — Full Code Explanation
 
-This document walks through every file in the project, explaining what each line or block of code does and **why** it's written that way. Written for someone learning to code.
+## What is TRADR?
+
+**TRADR** is a browser-based paper trading simulator built with React, TypeScript, and Vite. It lets you practice buying and selling financial assets — crypto, stocks, bonds, and ETFs — using a simulated $100,000 starting balance, with no real money involved.
+
+Prices for crypto assets are pulled live from the CoinGecko API every 30 seconds. Stock and bond prices are simulated with realistic random drift. Your portfolio data (cash, holdings, trade history) is saved to your browser's localStorage so it persists across page refreshes.
+
+### Features at a glance
+
+- **Live crypto prices** via CoinGecko (Bitcoin, Ethereum, Solana, and more — shown under fictional names)
+- **Simulated stock & bond prices** with realistic drift
+- **Buy and sell** any asset with automatic average cost tracking
+- **Portfolio overview** with a value-over-time chart powered by Recharts
+- **Trade history** log of every buy and sell
+- **Scrolling ticker** showing live price changes across the top
+- **Toast notifications** for trade confirmations and errors
+- **Persistent state** — your portfolio survives page refresh via localStorage
+
+### Tech stack
+
+| Tool | Role |
+|---|---|
+| React + TypeScript | UI components and type safety |
+| Vite | Fast dev server and build tool |
+| Zustand | Global state management |
+| Recharts | Portfolio value chart |
+| CoinGecko API | Live crypto prices |
 
 ---
 
@@ -27,7 +52,7 @@ This document walks through every file in the project, explaining what each line
 ## Project Structure
 
 ```
-marketsim/
+TRADR/
 ├── index.html          ← The single HTML page the browser loads
 ├── vite.config.ts      ← Build tool configuration
 ├── package.json        ← Project dependencies and scripts

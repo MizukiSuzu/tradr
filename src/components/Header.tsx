@@ -48,7 +48,7 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
               borderRadius: 6,
               letterSpacing: 1,
             }}>
-              TRADEVAULT
+              TRADR
             </div>
             <span style={{ color: 'var(--muted)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
               Trading Playground
