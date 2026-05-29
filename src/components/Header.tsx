@@ -24,6 +24,7 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
     { id: 'market', label: 'Markets' },
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'history', label: 'History' },
+    { id: 'traders', label: 'Traders' },
   ]
 
   return (

@@ -7,12 +7,17 @@ import MarketTab from './components/MarketTab'
 import PortfolioTab from './components/PortfolioTab'
 import TradeModal from './components/TradeModal'
 import Toast from './components/Toast'
+import TradersTab from './components/TradersTab'
+import { useAgentStore } from './agents/agentStore'
 import { Asset } from './types'
 
-export type Tab = 'market' | 'portfolio' | 'history'
+export type Tab = 'market' | 'portfolio' | 'history' | 'traders'
 
 export default function App() {
   const updatePrices = useStore(s => s.updatePrices)
+  const assets = useStore(s => s.assets)
+  const tickAgents = useAgentStore(s => s.tickAgents)
+  const initAgents = useAgentStore(s => s.initAgents)
   const [tab, setTab] = useState<Tab>('market')
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy')
@@ -26,10 +31,12 @@ export default function App() {
       Promise.resolve(getBondPrices()),
     ])
     updatePrices({ ...crypto, ...stocks, ...bonds })
+    tickAgents(useStore.getState().assets)
     setLoading(false)
-  }, [updatePrices])
+  }, [updatePrices, tickAgents])
 
   useEffect(() => {
+    initAgents(assets)
     refresh()
     const interval = setInterval(refresh, 30_000) // refresh every 30s
     return () => clearInterval(interval)
@@ -53,6 +60,7 @@ export default function App() {
         {tab === 'market' && <MarketTab onTrade={openTrade} />}
         {tab === 'portfolio' && <PortfolioTab onTrade={openTrade} />}
         {tab === 'history' && <HistoryTab />}
+        {tab === 'traders' && <TradersTab />}
       </main>
       {selectedAsset && (
         <TradeModal
