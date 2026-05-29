@@ -1,23 +1,46 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0a0a0f;
-  --bg2: #111118;
-  --bg3: #1a1a24;
-  --border: #2a2a38;
-  --accent: #00ff88;
-  --accent2: #7c3aed;
-  --red: #ff3b5c;
-  --green: #00ff88;
-  --gold: #f5c842;
-  --text: #e8e8f0;
-  --muted: #6b6b80;
+  /* Backgrounds */
+  --bg:        #0f0a1e;
+  --bg2:       #16102b;
+  --bg3:       #1e1735;
+  --bg-glass:  rgba(30, 23, 53, 0.6);
+
+  /* Borders */
+  --border:    rgba(148, 100, 255, 0.18);
+  --border-hi: rgba(192, 132, 252, 0.45);
+
+  /* Accent palette */
+  --accent:    #c084fc;
+  --accent2:   #67e8f9;
+  --accent3:   #a78bfa;
+
+  /* Semantic */
+  --green:     #86efac;
+  --red:       #f87171;
+  --gold:      #fcd34d;
+
+  /* Text */
+  --text:      #ede9fe;
+  --muted:     #7c6fa0;
+  --faint:     #3d3360;
+
+  /* Glow effects */
+  --glow-accent: 0 0 18px rgba(192, 132, 252, 0.25);
+  --glow-mint:   0 0 18px rgba(103, 232, 249, 0.2);
+
+  /* Fonts */
   --font-mono: 'Space Mono', monospace;
-  --font-sans: 'Syne', sans-serif;
+  --font-sans: 'Outfit', sans-serif;
 }
 
 body {
   background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 80%, rgba(103, 232, 249, 0.06) 0%, transparent 50%);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-sans);
   min-height: 100vh;
@@ -26,7 +49,26 @@ body {
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent3); }
+
+.panel {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.panel:hover {
+  border-color: var(--border-hi);
+  box-shadow: var(--glow-accent);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.glow-btn:hover {
+  box-shadow: var(--glow-accent);
+}
 
 button { cursor: pointer; border: none; background: none; font-family: inherit; }
 input { font-family: inherit; }
@@ -47,4 +89,35 @@ input { font-family: inherit; }
 @keyframes ticker {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
+}
+
+@keyframes crystalSpin {
+  0%   { transform: rotateX(0deg) rotateY(0deg); }
+  33%  { transform: rotateX(15deg) rotateY(120deg); }
+  66%  { transform: rotateX(-10deg) rotateY(240deg); }
+  100% { transform: rotateX(0deg) rotateY(360deg); }
+}
+
+@keyframes modalIn {
+  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; pointer-events: none; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fillRing {
+  from { stroke-dashoffset: 163; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes toastIn {
+  from { transform: translateX(20px) scale(0.95); opacity: 0; }
+  to   { transform: translateX(0) scale(1); opacity: 1; }
 }

@@ -5,12 +5,12 @@ import { STARTING_BALANCE, CLASS_COLORS } from '../assets'
 import { AgentState } from '../agents/agentTypes'
 
 const PERSONALITY_COLORS: Record<string, string> = {
-  degen: '#7c3aed',
-  value: '#3b82f6',
-  analytical: '#00ff88',
-  anxious: '#f5c842',
-  momentum: '#ff6b35',
-  sensei: '#e8a045',
+  degen:      '#c084fc',
+  value:      '#67e8f9',
+  analytical: '#a78bfa',
+  anxious:    '#fcd34d',
+  momentum:   '#f9a8d4',
+  sensei:     '#86efac',
 }
 
 function fmt(n: number) {

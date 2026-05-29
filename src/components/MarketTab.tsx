@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { Asset, AssetClass } from '../types'
-import { CLASS_COLORS, CLASS_LABELS } from '../assets'
+import { CLASS_LABELS } from '../assets'
 
 interface Props {
   onTrade: (asset: Asset, type: 'buy' | 'sell') => void
@@ -14,6 +14,13 @@ const FILTERS: { id: AssetClass | 'all'; label: string }[] = [
   { id: 'etf', label: 'ETFs' },
   { id: 'bond', label: 'Bonds' },
 ]
+
+const CLASS_PILL: Record<string, { bg: string; color: string }> = {
+  crypto: { bg: 'rgba(167,139,250,0.15)', color: '#a78bfa' },
+  stock:  { bg: 'rgba(103,232,249,0.12)', color: '#67e8f9' },
+  etf:    { bg: 'rgba(252,211,77,0.10)',  color: '#fcd34d' },
+  bond:   { bg: 'rgba(134,239,172,0.10)', color: '#86efac' },
+}
 
 export default function MarketTab({ onTrade }: Props) {
   const assets = useStore(s => s.assets)
@@ -31,26 +38,34 @@ export default function MarketTab({ onTrade }: Props) {
       {/* Controls */}
       <div style={{ display: 'flex', gap: 12, margin: '28px 0 20px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          {FILTERS.map(f => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 20,
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: 0.5,
-                background: filter === f.id ? 'var(--accent)' : 'var(--bg3)',
-                color: filter === f.id ? '#000' : 'var(--muted)',
-                border: filter === f.id ? 'none' : '1px solid var(--border)',
-                transition: 'all 0.2s',
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
+          {FILTERS.map(f => {
+            const isActive = filter === f.id
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                style={{
+                  padding: '5px 16px',
+                  borderRadius: 20,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: 0.5,
+                  background: isActive
+                    ? 'linear-gradient(135deg, rgba(192,132,252,0.3), rgba(103,232,249,0.15))'
+                    : 'rgba(22,16,43,0.8)',
+                  color: isActive ? '#c084fc' : 'var(--muted)',
+                  border: isActive
+                    ? '1px solid rgba(192,132,252,0.5)'
+                    : '1px solid var(--border)',
+                  boxShadow: isActive ? '0 0 10px rgba(192,132,252,0.2)' : 'none',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {f.label}
+              </button>
+            )
+          })}
         </div>
         <input
           value={search}
@@ -67,7 +82,10 @@ export default function MarketTab({ onTrade }: Props) {
             fontSize: 12,
             outline: 'none',
             width: 180,
+            transition: 'border-color 0.2s',
           }}
+          onFocus={e => (e.currentTarget.style.borderColor = 'var(--border-hi)')}
+          onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
         />
       </div>
 
@@ -75,7 +93,7 @@ export default function MarketTab({ onTrade }: Props) {
       <div style={{
         display: 'grid',
         gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr',
-        padding: '8px 16px',
+        padding: '8px 18px',
         color: 'var(--muted)',
         fontFamily: 'var(--font-mono)',
         fontSize: 10,
@@ -91,7 +109,7 @@ export default function MarketTab({ onTrade }: Props) {
       </div>
 
       {/* Asset rows */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
         {filtered.map(asset => (
           <AssetRow key={asset.id} asset={asset} onTrade={onTrade} />
         ))}
@@ -110,28 +128,40 @@ function AssetRow({ asset, onTrade }: { asset: Asset; onTrade: (a: Asset, t: 'bu
   const holding = useStore(s => s.holdings.find(h => h.assetId === asset.id))
   const isUp = asset.changePct >= 0
   const loading = asset.price === 0
+  const pill = CLASS_PILL[asset.class] ?? { bg: 'rgba(148,100,255,0.1)', color: '#a78bfa' }
 
   return (
     <div style={{
       display: 'grid',
       gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr',
-      padding: '14px 16px',
-      borderBottom: '1px solid var(--border)',
+      padding: '14px 18px',
+      background: 'rgba(22, 16, 43, 0.7)',
+      border: '1px solid var(--border)',
+      borderRadius: 12,
       alignItems: 'center',
-      transition: 'background 0.15s',
+      transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
+      cursor: 'default',
     }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg2)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'rgba(192,132,252,0.45)'
+        e.currentTarget.style.boxShadow = '0 0 18px rgba(192,132,252,0.12)'
+        e.currentTarget.style.transform = 'translateY(-1px)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'rgba(148,100,255,0.18)'
+        e.currentTarget.style.boxShadow = 'none'
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}
     >
       {/* Asset name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
           width: 36, height: 36, borderRadius: 10,
-          background: `${CLASS_COLORS[asset.class]}22`,
-          border: `1px solid ${CLASS_COLORS[asset.class]}44`,
+          background: pill.bg,
+          border: `1px solid ${pill.color}44`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
-          color: CLASS_COLORS[asset.class],
+          color: pill.color,
           flexShrink: 0,
         }}>
           {asset.symbol.slice(0, 3)}
@@ -142,13 +172,14 @@ function AssetRow({ asset, onTrade }: { asset: Asset; onTrade: (a: Asset, t: 'bu
         </div>
         {holding && (
           <span style={{
-            background: 'rgba(0,255,136,0.1)',
+            background: 'rgba(134,239,172,0.12)',
             color: 'var(--green)',
             fontSize: 9,
             fontFamily: 'var(--font-mono)',
             padding: '2px 6px',
             borderRadius: 4,
             fontWeight: 700,
+            letterSpacing: 0.5,
           }}>OWNED</span>
         )}
       </div>
@@ -176,8 +207,8 @@ function AssetRow({ asset, onTrade }: { asset: Asset; onTrade: (a: Asset, t: 'bu
       {/* Class badge */}
       <div style={{ textAlign: 'right' }}>
         <span style={{
-          background: `${CLASS_COLORS[asset.class]}22`,
-          color: CLASS_COLORS[asset.class],
+          background: pill.bg,
+          color: pill.color,
           fontFamily: 'var(--font-mono)',
           fontSize: 9,
           fontWeight: 700,
@@ -195,9 +226,9 @@ function AssetRow({ asset, onTrade }: { asset: Asset; onTrade: (a: Asset, t: 'bu
           onClick={() => onTrade(asset, 'buy')}
           disabled={loading}
           style={{
-            background: 'rgba(0,255,136,0.15)',
+            background: 'rgba(134,239,172,0.12)',
             color: 'var(--green)',
-            border: '1px solid rgba(0,255,136,0.3)',
+            border: '1px solid rgba(134,239,172,0.3)',
             borderRadius: 6,
             padding: '5px 14px',
             fontSize: 11,
@@ -206,8 +237,8 @@ function AssetRow({ asset, onTrade }: { asset: Asset; onTrade: (a: Asset, t: 'bu
             transition: 'all 0.2s',
             opacity: loading ? 0.4 : 1,
           }}
-          onMouseEnter={e => !loading && (e.currentTarget.style.background = 'rgba(0,255,136,0.3)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,255,136,0.15)')}
+          onMouseEnter={e => !loading && (e.currentTarget.style.background = 'rgba(134,239,172,0.25)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(134,239,172,0.12)')}
         >
           BUY
         </button>
@@ -215,9 +246,9 @@ function AssetRow({ asset, onTrade }: { asset: Asset; onTrade: (a: Asset, t: 'bu
           <button
             onClick={() => onTrade(asset, 'sell')}
             style={{
-              background: 'rgba(255,59,92,0.15)',
+              background: 'rgba(248,113,113,0.12)',
               color: 'var(--red)',
-              border: '1px solid rgba(255,59,92,0.3)',
+              border: '1px solid rgba(248,113,113,0.3)',
               borderRadius: 6,
               padding: '5px 14px',
               fontSize: 11,
@@ -225,8 +256,8 @@ function AssetRow({ asset, onTrade }: { asset: Asset; onTrade: (a: Asset, t: 'bu
               fontWeight: 700,
               transition: 'all 0.2s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,59,92,0.3)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,59,92,0.15)')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.25)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.12)')}
           >
             SELL
           </button>

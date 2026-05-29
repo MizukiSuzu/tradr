@@ -268,12 +268,12 @@ The interface defines both the **data** (state) and the **actions** (functions).
 export const useStore = create<PortfolioStore>()(
   persist(
     (set, get) => ({ ... }),
-    { name: 'marketsim-portfolio' }
+    { name: 'TRADR-portfolio' }
   )
 )
 ```
 - `create<PortfolioStore>()` — creates a Zustand store typed to our interface
-- `persist(...)` — wraps the store so it auto-saves to localStorage under the key `'marketsim-portfolio'`
+- `persist(...)` — wraps the store so it auto-saves to localStorage under the key `'TRADR-portfolio'`
 - `set` — a function to update store values
 - `get` — a function to read the current store values (useful inside actions)
 

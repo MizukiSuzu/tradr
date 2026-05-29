@@ -9,19 +9,25 @@ export default function Toast({ msg, ok }: Props) {
       position: 'fixed',
       bottom: 24,
       right: 24,
-      background: ok ? 'rgba(0,255,136,0.15)' : 'rgba(255,59,92,0.15)',
-      border: `1px solid ${ok ? 'rgba(0,255,136,0.4)' : 'rgba(255,59,92,0.4)'}`,
-      color: ok ? 'var(--green)' : 'var(--red)',
-      borderRadius: 10,
+      background: ok
+        ? 'linear-gradient(135deg, rgba(134,239,172,0.15), rgba(103,232,249,0.1))'
+        : 'rgba(248,113,113,0.12)',
+      border: `1px solid ${ok ? 'rgba(134,239,172,0.4)' : 'rgba(248,113,113,0.4)'}`,
+      borderRadius: 12,
       padding: '12px 20px',
-      fontFamily: 'var(--font-mono)',
-      fontWeight: 700,
-      fontSize: 13,
-      zIndex: 9999,
-      animation: 'slideIn 0.3s ease',
-      backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', gap: 10,
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      boxShadow: ok ? '0 0 20px rgba(134,239,172,0.15)' : '0 0 20px rgba(248,113,113,0.15)',
+      animation: 'toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+      zIndex: 9000,
     }}>
-      {ok ? '✓' : '✗'} {msg}
+      <span style={{ fontSize: 16 }}>{ok ? '✦' : '✕'}</span>
+      <span style={{
+        fontFamily: 'var(--font-mono)', fontSize: 13,
+        color: ok ? '#86efac' : '#f87171',
+        fontWeight: 700,
+      }}>{msg}</span>
     </div>
   )
 }

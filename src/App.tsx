@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useStore } from './store'
 import { fetchCryptoPrices, fetchStockPrices, getBondPrices } from './prices'
 import Header from './components/Header'
+import Loader from './components/Loader'
 import Ticker from './components/Ticker'
 import MarketTab from './components/MarketTab'
 import PortfolioTab from './components/PortfolioTab'
@@ -54,6 +55,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {loading && <Loader />}
       <Header tab={tab} setTab={setTab} loading={loading} onRefresh={refresh} />
       <Ticker />
       <main style={{ flex: 1, maxWidth: 1200, margin: '0 auto', width: '100%', padding: '0 16px 40px' }}>

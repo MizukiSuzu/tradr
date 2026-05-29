@@ -29,7 +29,9 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
 
   return (
     <header style={{
-      background: 'var(--bg2)',
+      background: 'rgba(22, 16, 43, 0.85)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
       borderBottom: '1px solid var(--border)',
       position: 'sticky',
       top: 0,
@@ -37,29 +39,35 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
         {/* Top row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 12px' }}>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{
-              background: 'var(--accent)',
-              color: '#000',
-              fontWeight: 800,
-              fontFamily: 'var(--font-mono)',
-              fontSize: 13,
-              padding: '4px 10px',
-              borderRadius: 6,
-              letterSpacing: 1,
+              width: 30, height: 30,
+              borderRadius: 8,
+              background: 'linear-gradient(135deg, #a78bfa 0%, #67e8f9 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 14px rgba(167,139,250,0.5)',
+            }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, color: '#0f0a1e' }}>T</span>
+            </div>
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15,
+              letterSpacing: 3,
+              background: 'linear-gradient(90deg, #c084fc, #67e8f9)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>
               TRADR
-            </div>
-            <span style={{ color: 'var(--muted)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+            </span>
+            <span style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', marginLeft: 4 }}>
               Trading Playground
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             {/* Portfolio value */}
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 2 }}>PORTFOLIO</div>
+              <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 2, letterSpacing: 1 }}>PORTFOLIO</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18 }}>
                   ${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
@@ -75,88 +83,134 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
               </div>
             </div>
 
-            {/* Cash */}
+            {/* Cash badge */}
             <div style={{
-              background: 'var(--bg3)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
+              background: 'rgba(252, 211, 77, 0.08)',
+              border: '1px solid rgba(252, 211, 77, 0.25)',
+              borderRadius: 10,
               padding: '6px 14px',
-              textAlign: 'center',
             }}>
-              <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 2 }}>CASH</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 14, color: 'var(--gold)' }}>
+              <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 2, letterSpacing: 1 }}>CASH</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15, color: 'var(--gold)' }}>
                 ${cash.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </div>
             </div>
 
-            {/* Refresh */}
-            <button
-              onClick={onRefresh}
-              title="Refresh prices"
-              style={{
-                background: 'var(--bg3)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                padding: '8px 12px',
-                color: 'var(--muted)',
-                fontSize: 14,
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
-            >
-              {loading ? '⟳' : '↻'}
-            </button>
+            {/* Orbital refresh indicator */}
+            {loading ? (
+              <div style={{ position: 'relative', width: 32, height: 32 }}>
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  borderRadius: '50%',
+                  border: '2px solid var(--faint)',
+                }} />
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  borderRadius: '50%',
+                  border: '2px solid transparent',
+                  borderTopColor: 'var(--accent)',
+                  borderRightColor: 'rgba(192,132,252,0.4)',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  top: '50%', left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: 6, height: 6,
+                  borderRadius: '50%',
+                  background: 'var(--accent)',
+                  boxShadow: '0 0 6px var(--accent)',
+                }} />
+              </div>
+            ) : (
+              <button
+                onClick={onRefresh}
+                title="Refresh prices"
+                style={{
+                  background: 'var(--bg3)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  width: 32, height: 32,
+                  color: 'var(--muted)',
+                  fontSize: 14,
+                  transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = 'var(--accent)'
+                  e.currentTarget.style.borderColor = 'var(--border-hi)'
+                  e.currentTarget.style.boxShadow = 'var(--glow-accent)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = 'var(--muted)'
+                  e.currentTarget.style.borderColor = 'var(--border)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                ↻
+              </button>
+            )}
 
             {/* Reset */}
             <button
               onClick={() => { if (confirm('Reset your entire portfolio?')) resetPortfolio() }}
               style={{
-                background: 'rgba(255,59,92,0.1)',
-                border: '1px solid rgba(255,59,92,0.3)',
+                background: 'rgba(248,113,113,0.08)',
+                border: '1px solid rgba(248,113,113,0.25)',
                 borderRadius: 8,
                 padding: '6px 12px',
                 color: 'var(--red)',
-                fontSize: 12,
+                fontSize: 11,
                 fontFamily: 'var(--font-mono)',
+                letterSpacing: 0.5,
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,59,92,0.2)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,59,92,0.1)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.18)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.08)')}
             >
               RESET
             </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 0, borderTop: '1px solid var(--border)' }}>
-          {tabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                padding: '10px 24px',
-                fontFamily: 'var(--font-sans)',
-                fontWeight: 700,
-                fontSize: 13,
-                letterSpacing: 0.5,
-                color: tab === t.id ? 'var(--accent)' : 'var(--muted)',
-                borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
-                transition: 'all 0.2s',
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+        {/* Pill tab bar */}
+        <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 12, gap: 8 }}>
+          <div style={{
+            display: 'flex', gap: 4, padding: '4px',
+            background: 'rgba(15,10,30,0.6)',
+            borderRadius: 12,
+            border: '1px solid var(--border)',
+          }}>
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                style={{
+                  padding: '7px 18px',
+                  borderRadius: 9,
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  background: tab === t.id
+                    ? 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(103,232,249,0.15))'
+                    : 'transparent',
+                  color: tab === t.id ? 'var(--accent)' : 'var(--muted)',
+                  border: tab === t.id ? '1px solid var(--border-hi)' : '1px solid transparent',
+                  transition: 'all 0.2s',
+                  boxShadow: tab === t.id ? 'var(--glow-accent)' : 'none',
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
           {lastUpdated && (
             <div style={{
               marginLeft: 'auto',
-              alignSelf: 'center',
               fontSize: 10,
-              color: 'var(--muted)',
+              color: 'var(--faint)',
               fontFamily: 'var(--font-mono)',
-              padding: '0 8px',
+              letterSpacing: 0.5,
             }}>
               Updated {new Date(lastUpdated).toLocaleTimeString()}
             </div>

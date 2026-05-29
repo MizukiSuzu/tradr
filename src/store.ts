@@ -109,6 +109,6 @@ export const useStore = create<PortfolioStore>()(
         lastUpdated: null
       }),
     }),
-    { name: 'marketsim-portfolio' }
+    { name: 'TRADR-portfolio' }
   )
 )
