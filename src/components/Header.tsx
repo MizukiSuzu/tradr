@@ -9,6 +9,13 @@ interface Props {
   onRefresh: () => void
 }
 
+const TAB_ICONS: Record<Tab, string> = {
+  market: '◈',
+  portfolio: '⬡',
+  history: '◷',
+  traders: '◉',
+}
+
 export default function Header({ tab, setTab, loading, onRefresh }: Props) {
   const cash = useStore(s => s.cash)
   const totalValue = useStore(s => s.totalValue)
@@ -29,54 +36,70 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
 
   return (
     <header style={{
-      background: 'rgba(22, 16, 43, 0.85)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      borderBottom: '1px solid var(--border)',
+      background: 'linear-gradient(180deg, rgba(18,13,38,0.97) 0%, rgba(15,10,30,0.92) 100%)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderBottom: '1px solid rgba(148,100,255,0.2)',
       position: 'sticky',
       top: 0,
       zIndex: 100,
+      boxShadow: '0 4px 32px rgba(0,0,0,0.5)',
     }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
         {/* Top row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 12px' }}>
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 30, height: 30,
-              borderRadius: 8,
+              width: 32, height: 32,
+              borderRadius: 10,
               background: 'linear-gradient(135deg, #a78bfa 0%, #67e8f9 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 14px rgba(167,139,250,0.5)',
+              boxShadow: '0 0 18px rgba(167,139,250,0.6), 0 0 40px rgba(167,139,250,0.2)',
             }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, color: '#0f0a1e' }}>T</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 12, color: '#0c0818' }}>T</span>
             </div>
             <span style={{
-              fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15,
-              letterSpacing: 3,
-              background: 'linear-gradient(90deg, #c084fc, #67e8f9)',
+              fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 16,
+              letterSpacing: 4,
+              background: 'linear-gradient(90deg, #c084fc 0%, #a78bfa 40%, #67e8f9 100%)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>
               TRADR
             </span>
-            <span style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', marginLeft: 4 }}>
+            <div style={{
+              width: 1, height: 18,
+              background: 'var(--border)',
+              margin: '0 4px',
+            }} />
+            <span style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', letterSpacing: 0.5 }}>
               Trading Playground
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {/* Portfolio value */}
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 2, letterSpacing: 1 }}>PORTFOLIO</div>
+            <div style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 12,
+              padding: '8px 16px',
+              textAlign: 'right',
+            }}>
+              <div style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 3, letterSpacing: 1.5 }}>PORTFOLIO</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18 }}>
                   ${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </span>
                 <span style={{
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
+                  fontSize: 11,
                   color: isUp ? 'var(--green)' : 'var(--red)',
                   fontWeight: 700,
+                  background: isUp ? 'rgba(134,239,172,0.1)' : 'rgba(248,113,113,0.1)',
+                  border: `1px solid ${isUp ? 'rgba(134,239,172,0.2)' : 'rgba(248,113,113,0.2)'}`,
+                  borderRadius: 5,
+                  padding: '1px 6px',
                 }}>
                   {isUp ? '+' : ''}{pnlPct.toFixed(2)}%
                 </span>
@@ -85,20 +108,21 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
 
             {/* Cash badge */}
             <div style={{
-              background: 'rgba(252, 211, 77, 0.08)',
-              border: '1px solid rgba(252, 211, 77, 0.25)',
-              borderRadius: 10,
-              padding: '6px 14px',
+              background: 'linear-gradient(135deg, rgba(252,211,77,0.1), rgba(252,211,77,0.04))',
+              border: '1px solid rgba(252,211,77,0.25)',
+              borderRadius: 12,
+              padding: '8px 16px',
+              boxShadow: '0 0 20px rgba(252,211,77,0.06)',
             }}>
-              <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 2, letterSpacing: 1 }}>CASH</div>
+              <div style={{ fontSize: 9, color: 'rgba(252,211,77,0.6)', fontFamily: 'var(--font-mono)', marginBottom: 3, letterSpacing: 1.5 }}>CASH</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15, color: 'var(--gold)' }}>
                 ${cash.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </div>
             </div>
 
-            {/* Orbital refresh indicator */}
+            {/* Refresh */}
             {loading ? (
-              <div style={{ position: 'relative', width: 32, height: 32 }}>
+              <div style={{ position: 'relative', width: 34, height: 34 }}>
                 <div style={{
                   position: 'absolute', inset: 0,
                   borderRadius: '50%',
@@ -119,7 +143,7 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
                   width: 6, height: 6,
                   borderRadius: '50%',
                   background: 'var(--accent)',
-                  boxShadow: '0 0 6px var(--accent)',
+                  boxShadow: '0 0 8px var(--accent)',
                 }} />
               </div>
             ) : (
@@ -127,12 +151,12 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
                 onClick={onRefresh}
                 title="Refresh prices"
                 style={{
-                  background: 'var(--bg3)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 8,
-                  width: 32, height: 32,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 10,
+                  width: 34, height: 34,
                   color: 'var(--muted)',
-                  fontSize: 14,
+                  fontSize: 16,
                   transition: 'all 0.2s',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
@@ -140,11 +164,13 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
                   e.currentTarget.style.color = 'var(--accent)'
                   e.currentTarget.style.borderColor = 'var(--border-hi)'
                   e.currentTarget.style.boxShadow = 'var(--glow-accent)'
+                  e.currentTarget.style.background = 'rgba(192,132,252,0.08)'
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.color = 'var(--muted)'
-                  e.currentTarget.style.borderColor = 'var(--border)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
                   e.currentTarget.style.boxShadow = 'none'
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
                 }}
               >
                 ↻
@@ -155,30 +181,39 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
             <button
               onClick={() => { if (confirm('Reset your entire portfolio?')) resetPortfolio() }}
               style={{
-                background: 'rgba(248,113,113,0.08)',
-                border: '1px solid rgba(248,113,113,0.25)',
-                borderRadius: 8,
-                padding: '6px 12px',
+                background: 'rgba(248,113,113,0.06)',
+                border: '1px solid rgba(248,113,113,0.2)',
+                borderRadius: 10,
+                padding: '7px 14px',
                 color: 'var(--red)',
                 fontSize: 11,
                 fontFamily: 'var(--font-mono)',
-                letterSpacing: 0.5,
+                letterSpacing: 1,
+                fontWeight: 700,
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.18)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(248,113,113,0.08)')}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(248,113,113,0.15)'
+                e.currentTarget.style.borderColor = 'rgba(248,113,113,0.4)'
+                e.currentTarget.style.boxShadow = '0 0 14px rgba(248,113,113,0.15)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(248,113,113,0.06)'
+                e.currentTarget.style.borderColor = 'rgba(248,113,113,0.2)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
             >
               RESET
             </button>
           </div>
         </div>
 
-        {/* Pill tab bar */}
+        {/* Tab bar */}
         <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 12, gap: 8 }}>
           <div style={{
-            display: 'flex', gap: 4, padding: '4px',
-            background: 'rgba(15,10,30,0.6)',
-            borderRadius: 12,
+            display: 'flex', gap: 2, padding: '4px',
+            background: 'rgba(12,8,24,0.7)',
+            borderRadius: 14,
             border: '1px solid var(--border)',
           }}>
             {tabs.map(t => (
@@ -186,20 +221,34 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 style={{
-                  padding: '7px 18px',
-                  borderRadius: 9,
+                  padding: '8px 22px',
+                  borderRadius: 10,
                   fontFamily: 'var(--font-sans)',
                   fontWeight: 600,
                   fontSize: 13,
+                  display: 'flex', alignItems: 'center', gap: 6,
                   background: tab === t.id
-                    ? 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(103,232,249,0.15))'
+                    ? 'linear-gradient(135deg, rgba(167,139,250,0.22), rgba(103,232,249,0.12))'
                     : 'transparent',
                   color: tab === t.id ? 'var(--accent)' : 'var(--muted)',
-                  border: tab === t.id ? '1px solid var(--border-hi)' : '1px solid transparent',
+                  border: tab === t.id ? '1px solid rgba(192,132,252,0.35)' : '1px solid transparent',
                   transition: 'all 0.2s',
-                  boxShadow: tab === t.id ? 'var(--glow-accent)' : 'none',
+                  boxShadow: tab === t.id ? '0 0 16px rgba(192,132,252,0.2), inset 0 1px 0 rgba(255,255,255,0.06)' : 'none',
+                }}
+                onMouseEnter={e => {
+                  if (tab !== t.id) {
+                    e.currentTarget.style.color = 'var(--text)'
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (tab !== t.id) {
+                    e.currentTarget.style.color = 'var(--muted)'
+                    e.currentTarget.style.background = 'transparent'
+                  }
                 }}
               >
+                <span style={{ fontSize: 12, opacity: 0.7 }}>{TAB_ICONS[t.id]}</span>
                 {t.label}
               </button>
             ))}

@@ -2,14 +2,14 @@
 
 :root {
   /* Backgrounds */
-  --bg:        #0f0a1e;
-  --bg2:       #16102b;
-  --bg3:       #1e1735;
-  --bg-glass:  rgba(30, 23, 53, 0.6);
+  --bg:        #0c0818;
+  --bg2:       #13102a;
+  --bg3:       #1a1538;
+  --bg-glass:  rgba(26, 21, 56, 0.75);
 
   /* Borders */
-  --border:    rgba(148, 100, 255, 0.18);
-  --border-hi: rgba(192, 132, 252, 0.45);
+  --border:    rgba(148, 100, 255, 0.15);
+  --border-hi: rgba(192, 132, 252, 0.5);
 
   /* Accent palette */
   --accent:    #c084fc;
@@ -23,12 +23,12 @@
 
   /* Text */
   --text:      #ede9fe;
-  --muted:     #7c6fa0;
-  --faint:     #3d3360;
+  --muted:     #7060a0;
+  --faint:     #352d58;
 
   /* Glow effects */
-  --glow-accent: 0 0 18px rgba(192, 132, 252, 0.25);
-  --glow-mint:   0 0 18px rgba(103, 232, 249, 0.2);
+  --glow-accent: 0 0 20px rgba(192, 132, 252, 0.3);
+  --glow-mint:   0 0 20px rgba(103, 232, 249, 0.25);
 
   /* Fonts */
   --font-mono: 'Space Mono', monospace;
@@ -38,8 +38,9 @@
 body {
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 80% 80%, rgba(103, 232, 249, 0.06) 0%, transparent 50%);
+    radial-gradient(ellipse 90% 60% at 50% -5%, rgba(139, 92, 246, 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 35% at 85% 85%, rgba(103, 232, 249, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 10% 70%, rgba(167, 139, 250, 0.06) 0%, transparent 50%);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-sans);
@@ -54,10 +55,10 @@ body {
 
 .panel {
   background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
 }
 
 .panel:hover {
@@ -82,7 +83,7 @@ input { font-family: inherit; }
 }
 
 @keyframes slideIn {
-  from { transform: translateY(10px); opacity: 0; }
+  from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
@@ -99,7 +100,7 @@ input { font-family: inherit; }
 }
 
 @keyframes modalIn {
-  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+  from { transform: scale(0.9) translateY(10px); opacity: 0; }
   to   { transform: scale(1) translateY(0); opacity: 1; }
 }
 
@@ -118,6 +119,11 @@ input { font-family: inherit; }
 }
 
 @keyframes toastIn {
-  from { transform: translateX(20px) scale(0.95); opacity: 0; }
+  from { transform: translateX(24px) scale(0.94); opacity: 0; }
   to   { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }

@@ -63,15 +63,20 @@ interface AssetParams {
 
 const ASSET_PARAMS: Record<string, AssetParams> = {
   // Stocks — large-cap, ~20-40% annual vol
-  aapl: { annualVol: 0.28, annualDrift: 0.10, sector: 'tech' },
-  msft: { annualVol: 0.26, annualDrift: 0.10, sector: 'tech' },
-  nvda: { annualVol: 0.55, annualDrift: 0.15, sector: 'tech' },
-  tsla: { annualVol: 0.60, annualDrift: 0.05, sector: 'ev'   },
-  amzn: { annualVol: 0.30, annualDrift: 0.10, sector: 'tech' },
-  goog: { annualVol: 0.27, annualDrift: 0.10, sector: 'tech' },
+  aapl: { annualVol: 0.28, annualDrift: 0.10, sector: 'tech'    },
+  msft: { annualVol: 0.26, annualDrift: 0.10, sector: 'tech'    },
+  nvda: { annualVol: 0.55, annualDrift: 0.15, sector: 'tech'    },
+  tsla: { annualVol: 0.60, annualDrift: 0.05, sector: 'ev'      },
+  amzn: { annualVol: 0.30, annualDrift: 0.10, sector: 'tech'    },
+  goog: { annualVol: 0.27, annualDrift: 0.10, sector: 'tech'    },
+  meta: { annualVol: 0.35, annualDrift: 0.12, sector: 'tech'    },
+  nflx: { annualVol: 0.40, annualDrift: 0.08, sector: 'media'   },
+  jpm:  { annualVol: 0.22, annualDrift: 0.09, sector: 'finance' },
   // ETFs — lower vol due to diversification
-  spy:  { annualVol: 0.16, annualDrift: 0.09, sector: 'market' },
-  qqq:  { annualVol: 0.20, annualDrift: 0.10, sector: 'market' },
+  spy:  { annualVol: 0.16, annualDrift: 0.09, sector: 'market'  },
+  qqq:  { annualVol: 0.20, annualDrift: 0.10, sector: 'market'  },
+  gld:  { annualVol: 0.14, annualDrift: 0.05, sector: 'commodity'},
+  uso:  { annualVol: 0.30, annualDrift: 0.03, sector: 'commodity'},
 }
 
 const STOCK_BASE_PRICES: Record<string, number> = {
@@ -81,8 +86,13 @@ const STOCK_BASE_PRICES: Record<string, number> = {
   tsla: 177,
   amzn: 210,
   goog: 178,
+  meta: 585,
+  nflx: 1020,
+  jpm:  260,
   spy:  540,
   qqq:  465,
+  gld:  245,
+  uso:  72,
 }
 
 // Runtime state — persists across refresh calls in this module
@@ -229,6 +239,7 @@ interface BondState {
 const BOND_PARAMS: Record<string, { fairValue: number; vol: number; revSpeed: number }> = {
   us10y: { fairValue: 98.50, vol: 0.04, revSpeed: 0.10 },
   us2y:  { fairValue: 99.20, vol: 0.02, revSpeed: 0.15 },
+  us30y: { fairValue: 95.80, vol: 0.06, revSpeed: 0.07 },
 }
 
 const bondState: Record<string, BondState> = {}

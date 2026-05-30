@@ -9,289 +9,525 @@ interface Props {
   onToast: (msg: string, ok: boolean) => void
 }
 
+const CLASS_GLOW: Record<string, { from: string; to: string; glow: string }> = {
+  crypto: { from: '#a78bfa', to: '#67e8f9', glow: 'rgba(167,139,250,0.35)' },
+  stock:  { from: '#67e8f9', to: '#a78bfa', glow: 'rgba(103,232,249,0.3)' },
+  etf:    { from: '#fcd34d', to: '#f9a8d4', glow: 'rgba(252,211,77,0.3)' },
+  bond:   { from: '#86efac', to: '#67e8f9', glow: 'rgba(134,239,172,0.3)' },
+}
+
 export default function TradeModal({ asset, type: initialType, onClose, onToast }: Props) {
   const [type, setType] = useState(initialType)
+  const [orderMode, setOrderMode] = useState<'market' | 'limit'>('market')
   const [qty, setQty] = useState('')
+  const [limitPrice, setLimitPrice] = useState('')
   const [confirming, setConfirming] = useState(false)
   const cash = useStore(s => s.cash)
   const buy = useStore(s => s.buy)
   const sell = useStore(s => s.sell)
+  const placeLimitOrder = useStore(s => s.placeLimitOrder)
   const holding = useStore(s => s.holdings.find(h => h.assetId === asset.id))
 
   const quantity = parseFloat(qty) || 0
-  const total = quantity * asset.price
+  const effectivePrice = orderMode === 'limit' ? (parseFloat(limitPrice) || 0) : asset.price
+  const total = quantity * effectivePrice
   const canAfford = total <= cash
   const hasEnough = holding ? holding.quantity >= quantity : false
 
+  const isBuy = type === 'buy'
+  const isLimit = orderMode === 'limit'
+  const palette = CLASS_GLOW[asset.class] ?? CLASS_GLOW.crypto
+
+  const accentColor = isBuy ? '#c084fc' : '#f87171'
+  const accentGlow = isBuy ? 'rgba(192,132,252,0.3)' : 'rgba(248,113,113,0.3)'
+  const accentBg = isBuy
+    ? 'linear-gradient(135deg, rgba(167,139,250,0.25), rgba(103,232,249,0.12))'
+    : 'rgba(248,113,113,0.18)'
+  const accentBorder = isBuy ? 'rgba(192,132,252,0.5)' : 'rgba(248,113,113,0.5)'
+
+  const canSubmit = quantity > 0 && (
+    isLimit
+      ? (effectivePrice > 0 && (isBuy ? canAfford : hasEnough))
+      : (isBuy ? canAfford : hasEnough)
+  )
+
   const handleSubmit = () => {
-    if (quantity <= 0) return
+    if (!canSubmit) return
     setConfirming(true)
     setTimeout(() => {
-      const result = type === 'buy' ? buy(asset.id, quantity) : sell(asset.id, quantity)
+      let result: { ok: boolean; msg: string }
+      if (isLimit) {
+        result = placeLimitOrder({
+          assetId: asset.id, type, quantity,
+          limitPrice: effectivePrice,
+          reservedCash: isBuy ? total : 0,
+        })
+      } else {
+        result = isBuy ? buy(asset.id, quantity) : sell(asset.id, quantity)
+      }
       onToast(result.msg, result.ok)
       if (result.ok) onClose()
       else setConfirming(false)
-    }, 650)
+    }, 700)
   }
 
   const setMaxBuy = () => {
-    const maxQty = Math.floor((cash / asset.price) * 10000) / 10000
-    setQty(maxQty.toString())
+    const p = isLimit ? (parseFloat(limitPrice) || asset.price) : asset.price
+    setQty(String(Math.floor((cash / p) * 10000) / 10000))
   }
+  const setMaxSell = () => { if (holding) setQty(String(holding.quantity)) }
 
-  const setMaxSell = () => {
-    if (holding) setQty(holding.quantity.toString())
-  }
-
-  const isBuy = type === 'buy'
-  const canSubmit = quantity > 0 && (isBuy ? canAfford : hasEnough)
-
-  const buyActiveStyle = {
-    background: 'linear-gradient(135deg, rgba(167,139,250,0.3), rgba(192,132,252,0.2))',
-    border: '1px solid rgba(192,132,252,0.6)',
-    color: '#c084fc',
-    boxShadow: '0 0 14px rgba(192,132,252,0.25)',
-  }
-  const sellActiveStyle = {
-    background: 'rgba(248,113,113,0.15)',
-    border: '1px solid rgba(248,113,113,0.5)',
-    color: '#f87171',
-    boxShadow: '0 0 14px rgba(248,113,113,0.2)',
-  }
-  const inactiveToggle = {
-    background: 'transparent',
-    border: '1px solid transparent',
-    color: 'var(--muted)',
-    boxShadow: 'none',
-  }
+  const fmtPrice = (p: number) =>
+    p < 1 ? p.toFixed(4) : p.toLocaleString(undefined, { maximumFractionDigits: 2 })
 
   return (
     <div
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(10, 6, 25, 0.75)',
-        backdropFilter: 'blur(6px)',
+        background: 'rgba(8,4,20,0.82)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         zIndex: 1000,
+        padding: '20px',
       }}
     >
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(160deg, #1a1035 0%, #120e28 100%)',
-          border: '1px solid rgba(192,132,252,0.3)',
-          borderRadius: 20,
-          padding: '28px 32px',
           width: '100%',
-          maxWidth: 420,
-          boxShadow: '0 0 60px rgba(139,92,246,0.2), 0 20px 40px rgba(0,0,0,0.5)',
-          animation: 'modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+          maxWidth: 440,
+          position: 'relative',
+          animation: 'modalIn 0.28s cubic-bezier(0.34,1.56,0.64,1)',
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 20 }}>{asset.symbol}</div>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{asset.name}</div>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              color: 'var(--muted)', fontSize: 18, padding: 6,
-              background: 'var(--bg3)', borderRadius: 8,
-              border: '1px solid var(--border)',
-              width: 32, height: 32,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
-          >✕</button>
-        </div>
-
-        {/* Price */}
+        {/* Outer glow ring */}
         <div style={{
-          background: 'rgba(30,23,53,0.8)',
-          border: '1px solid var(--border)',
-          borderRadius: 12,
-          padding: '12px 16px',
-          marginBottom: 20,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <span style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', letterSpacing: 1 }}>CURRENT PRICE</span>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 20 }}>
-              ${asset.price < 1 ? asset.price.toFixed(4) : asset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-            </div>
-            <div style={{ fontSize: 11, color: asset.changePct >= 0 ? 'var(--green)' : 'var(--red)', fontFamily: 'var(--font-mono)' }}>
-              {asset.changePct >= 0 ? '+' : ''}{asset.changePct.toFixed(2)}% today
-            </div>
-          </div>
-        </div>
+          position: 'absolute', inset: -1,
+          borderRadius: 24,
+          background: `linear-gradient(135deg, ${palette.from}55, ${palette.to}33)`,
+          zIndex: -1,
+          filter: `blur(1px)`,
+        }} />
 
-        {/* Buy/Sell toggle */}
+        {/* Main card */}
         <div style={{
-          display: 'flex', gap: 4, marginBottom: 20,
-          padding: '4px',
-          background: 'rgba(15,10,30,0.6)',
-          borderRadius: 12,
-          border: '1px solid var(--border)',
+          background: 'linear-gradient(165deg, #1c1438 0%, #110d24 50%, #0f0a1e 100%)',
+          borderRadius: 22,
+          border: `1px solid ${palette.from}40`,
+          overflow: 'hidden',
+          boxShadow: `0 0 60px ${palette.glow}, 0 24px 60px rgba(0,0,0,0.7)`,
         }}>
-          {(['buy', 'sell'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setType(t)}
-              style={{
-                flex: 1,
-                padding: '10px',
-                borderRadius: 9,
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: 1,
-                transition: 'all 0.2s',
-                ...(type === t
-                  ? (t === 'buy' ? buyActiveStyle : sellActiveStyle)
-                  : inactiveToggle),
-              }}
-            >
-              {t.toUpperCase()}
-            </button>
-          ))}
-        </div>
 
-        {/* Trade confirm animation or form */}
-        {confirming ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0' }}>
-            <svg width="64" height="64" style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx="32" cy="32" r="26" fill="none" stroke="var(--faint)" strokeWidth="3" />
-              <circle cx="32" cy="32" r="26" fill="none"
-                stroke="url(#tradeGrad)" strokeWidth="3"
-                strokeDasharray="163" strokeDashoffset="163"
-                style={{ animation: 'fillRing 0.6s ease-out forwards' }}
-              />
-              <defs>
-                <linearGradient id="tradeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#c084fc" />
-                  <stop offset="100%" stopColor="#67e8f9" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', letterSpacing: 1 }}>
-              EXECUTING...
-            </span>
+          {/* ── Header band ── */}
+          <div style={{
+            padding: '22px 24px 20px',
+            background: `linear-gradient(135deg, ${palette.from}14 0%, transparent 60%)`,
+            borderBottom: `1px solid ${palette.from}20`,
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Big blurred bg letter */}
+            <div style={{
+              position: 'absolute', right: -8, top: -10,
+              fontFamily: 'var(--font-mono)', fontWeight: 900,
+              fontSize: 88, letterSpacing: -4,
+              color: palette.from, opacity: 0.06,
+              userSelect: 'none', lineHeight: 1,
+              pointerEvents: 'none',
+            }}>
+              {asset.symbol.slice(0, 4)}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                {/* Asset class pill */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  background: `${palette.from}18`,
+                  border: `1px solid ${palette.from}35`,
+                  borderRadius: 20, padding: '3px 10px',
+                  marginBottom: 8,
+                }}>
+                  <div style={{
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: palette.from,
+                    boxShadow: `0 0 6px ${palette.from}`,
+                  }} />
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 9,
+                    color: palette.from, fontWeight: 700, letterSpacing: 1.5,
+                  }}>
+                    {asset.class.toUpperCase()}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <h2 style={{
+                    fontFamily: 'var(--font-mono)', fontWeight: 700,
+                    fontSize: 26, letterSpacing: -0.5,
+                    background: `linear-gradient(90deg, ${palette.from}, ${palette.to})`,
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                  }}>{asset.symbol}</h2>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{asset.name}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={onClose}
+                style={{
+                  width: 34, height: 34,
+                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'var(--muted)', fontSize: 14,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.09)'
+                  e.currentTarget.style.color = 'var(--text)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                  e.currentTarget.style.color = 'var(--muted)'
+                }}
+              >✕</button>
+            </div>
+
+            {/* Price display */}
+            <div style={{ marginTop: 16, display: 'flex', alignItems: 'flex-end', gap: 12 }}>
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontWeight: 700,
+                fontSize: 32, letterSpacing: -1,
+                textShadow: `0 0 30px ${palette.from}60`,
+              }}>
+                ${fmtPrice(asset.price)}
+              </div>
+              <div style={{
+                marginBottom: 5,
+                fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+                color: asset.changePct >= 0 ? 'var(--green)' : 'var(--red)',
+                background: asset.changePct >= 0 ? 'rgba(134,239,172,0.1)' : 'rgba(248,113,113,0.1)',
+                border: `1px solid ${asset.changePct >= 0 ? 'rgba(134,239,172,0.25)' : 'rgba(248,113,113,0.25)'}`,
+                borderRadius: 6, padding: '3px 8px',
+              }}>
+                {asset.changePct >= 0 ? '▲' : '▼'} {Math.abs(asset.changePct).toFixed(2)}%
+              </div>
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Quantity input */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <label style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontWeight: 700, letterSpacing: 1 }}>
-                  QUANTITY
-                </label>
+
+          {/* ── Body ── */}
+          <div style={{ padding: '20px 24px 24px' }}>
+
+            {/* Buy / Sell tabs */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr',
+              background: 'rgba(10,6,20,0.6)',
+              borderRadius: 14, padding: 4,
+              border: '1px solid rgba(255,255,255,0.06)',
+              marginBottom: 16,
+            }}>
+              {(['buy', 'sell'] as const).map(t => {
+                const isActive = type === t
+                const tabColor = t === 'buy' ? '#c084fc' : '#f87171'
+                const tabBg = t === 'buy'
+                  ? 'linear-gradient(135deg, rgba(167,139,250,0.28), rgba(103,232,249,0.14))'
+                  : 'rgba(248,113,113,0.18)'
+                const tabBorder = t === 'buy' ? 'rgba(192,132,252,0.5)' : 'rgba(248,113,113,0.5)'
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setType(t)}
+                    style={{
+                      padding: '11px',
+                      borderRadius: 11,
+                      fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, letterSpacing: 1.5,
+                      transition: 'all 0.22s',
+                      background: isActive ? tabBg : 'transparent',
+                      color: isActive ? tabColor : 'var(--muted)',
+                      border: isActive ? `1px solid ${tabBorder}` : '1px solid transparent',
+                      boxShadow: isActive ? `0 0 16px ${t === 'buy' ? 'rgba(192,132,252,0.2)' : 'rgba(248,113,113,0.15)'}` : 'none',
+                    }}
+                  >
+                    {t === 'buy' ? '▲ BUY' : '▼ SELL'}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Market / Limit toggle */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr',
+              background: 'rgba(10,6,20,0.4)',
+              borderRadius: 10, padding: 3,
+              border: '1px solid rgba(255,255,255,0.05)',
+              marginBottom: 18,
+            }}>
+              {(['market', 'limit'] as const).map(m => {
+                const isActive = orderMode === m
+                return (
+                  <button
+                    key={m}
+                    onClick={() => setOrderMode(m)}
+                    style={{
+                      padding: '7px',
+                      borderRadius: 8,
+                      fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 10, letterSpacing: 1,
+                      transition: 'all 0.18s',
+                      background: isActive ? 'rgba(103,232,249,0.1)' : 'transparent',
+                      color: isActive ? 'var(--accent2)' : 'var(--muted)',
+                      border: isActive ? '1px solid rgba(103,232,249,0.28)' : '1px solid transparent',
+                    }}
+                  >
+                    {m === 'market' ? '⚡ MARKET' : '⏳ LIMIT'}
+                  </button>
+                )
+              })}
+            </div>
+
+            {confirming ? (
+              /* ── Executing animation ── */
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: '28px 0 16px' }}>
+                <div style={{ position: 'relative', width: 72, height: 72 }}>
+                  {/* Outer ring */}
+                  <svg width="72" height="72" style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}>
+                    <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                    <circle cx="36" cy="36" r="30" fill="none"
+                      stroke={`url(#execGrad)`} strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeDasharray="188" strokeDashoffset="188"
+                      style={{ animation: 'fillRing 0.7s ease-out forwards' }}
+                    />
+                    <defs>
+                      <linearGradient id="execGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor={palette.from} />
+                        <stop offset="100%" stopColor={palette.to} />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  {/* Center icon */}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 22,
+                  }}>
+                    {isLimit ? '⏳' : (isBuy ? '▲' : '▼')}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', letterSpacing: 2, textAlign: 'center' }}>
+                    {isLimit ? 'QUEUING ORDER' : 'EXECUTING'}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--faint)', textAlign: 'center', marginTop: 4 }}>
+                    {asset.symbol} · {quantity} units
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Limit price input */}
+                {isLimit && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{
+                      fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)',
+                      fontWeight: 700, letterSpacing: 1.5, marginBottom: 8,
+                    }}>
+                      {isBuy ? 'TRIGGER WHEN PRICE ≤' : 'TRIGGER WHEN PRICE ≥'}
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{
+                        position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                        fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 16,
+                        color: 'var(--accent2)', opacity: 0.6,
+                        pointerEvents: 'none',
+                      }}>$</span>
+                      <input
+                        type="number"
+                        value={limitPrice}
+                        onChange={e => setLimitPrice(e.target.value)}
+                        placeholder={fmtPrice(asset.price)}
+                        autoFocus
+                        style={{
+                          width: '100%', background: 'rgba(103,232,249,0.05)',
+                          border: `1px solid ${parseFloat(limitPrice) > 0 ? 'rgba(103,232,249,0.4)' : 'rgba(103,232,249,0.15)'}`,
+                          borderRadius: 11, padding: '12px 14px 12px 28px',
+                          color: 'var(--text)', fontFamily: 'var(--font-mono)',
+                          fontSize: 17, fontWeight: 700, outline: 'none',
+                          transition: 'border-color 0.2s',
+                        }}
+                        onFocus={e => (e.currentTarget.style.borderColor = 'rgba(103,232,249,0.5)')}
+                        onBlur={e => (e.currentTarget.style.borderColor = parseFloat(limitPrice) > 0 ? 'rgba(103,232,249,0.4)' : 'rgba(103,232,249,0.15)')}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantity */}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontWeight: 700, letterSpacing: 1.5 }}>
+                      QUANTITY
+                    </span>
+                    <button
+                      onClick={isBuy ? setMaxBuy : setMaxSell}
+                      style={{
+                        fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 700,
+                        color: accentColor, letterSpacing: 1,
+                        background: `${accentColor}15`, border: `1px solid ${accentColor}35`,
+                        borderRadius: 5, padding: '2px 8px', transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = `${accentColor}28`)}
+                      onMouseLeave={e => (e.currentTarget.style.background = `${accentColor}15`)}
+                    >
+                      MAX
+                    </button>
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="number"
+                      value={qty}
+                      onChange={e => setQty(e.target.value)}
+                      placeholder="0.00"
+                      min="0" step="any"
+                      style={{
+                        width: '100%',
+                        background: quantity > 0 ? `${accentColor}08` : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${quantity > 0 ? accentBorder : 'rgba(255,255,255,0.09)'}`,
+                        borderRadius: 11, padding: '14px 16px',
+                        color: 'var(--text)', fontFamily: 'var(--font-mono)',
+                        fontSize: 22, fontWeight: 700, outline: 'none',
+                        transition: 'all 0.2s',
+                        boxShadow: quantity > 0 ? `0 0 16px ${accentGlow}` : 'none',
+                      }}
+                      onFocus={e => (e.currentTarget.style.borderColor = accentBorder)}
+                      onBlur={e => (e.currentTarget.style.borderColor = quantity > 0 ? accentBorder : 'rgba(255,255,255,0.09)')}
+                    />
+                    {quantity > 0 && (
+                      <div style={{
+                        position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+                        fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
+                      }}>
+                        units
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Summary row */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr',
+                  gap: 10, marginBottom: 14,
+                }}>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 11, padding: '11px 14px',
+                  }}>
+                    <div style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 1.5, marginBottom: 5 }}>
+                      {isLimit ? 'EST. TOTAL' : 'TOTAL'}
+                    </div>
+                    <div style={{
+                      fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 16,
+                      color: total > 0 ? accentColor : 'var(--faint)',
+                      textShadow: total > 0 ? `0 0 20px ${accentGlow}` : 'none',
+                    }}>
+                      ${total > 0 ? total.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0.00'}
+                    </div>
+                  </div>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 11, padding: '11px 14px',
+                  }}>
+                    <div style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 1.5, marginBottom: 5 }}>
+                      {isBuy ? 'AVAILABLE' : 'OWNED'}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 16, color: 'var(--gold)' }}>
+                      {isBuy
+                        ? `$${cash.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                        : (holding ? `${holding.quantity}` : '—')}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Limit info */}
+                {isLimit && effectivePrice > 0 && (
+                  <div style={{
+                    background: 'rgba(103,232,249,0.05)',
+                    border: '1px solid rgba(103,232,249,0.15)',
+                    borderRadius: 10, padding: '9px 14px',
+                    marginBottom: 14,
+                    fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.6,
+                  }}>
+                    {isBuy
+                      ? `⏳ Triggers when price drops to $${fmtPrice(effectivePrice)}. Cash reserved until filled or cancelled.`
+                      : `⏳ Triggers when price rises to $${fmtPrice(effectivePrice)}.`}
+                  </div>
+                )}
+
+                {/* Warnings */}
+                {quantity > 0 && isBuy && !canAfford && (
+                  <div style={{
+                    color: 'var(--red)', fontSize: 11, fontFamily: 'var(--font-mono)',
+                    marginBottom: 12, textAlign: 'center',
+                    background: 'rgba(248,113,113,0.08)', borderRadius: 8, padding: '8px',
+                    border: '1px solid rgba(248,113,113,0.2)',
+                  }}>
+                    ⚠ Insufficient funds
+                  </div>
+                )}
+                {quantity > 0 && !isBuy && !hasEnough && (
+                  <div style={{
+                    color: 'var(--red)', fontSize: 11, fontFamily: 'var(--font-mono)',
+                    marginBottom: 12, textAlign: 'center',
+                    background: 'rgba(248,113,113,0.08)', borderRadius: 8, padding: '8px',
+                    border: '1px solid rgba(248,113,113,0.2)',
+                  }}>
+                    ⚠ Not enough holdings
+                  </div>
+                )}
+
+                {/* CTA */}
                 <button
-                  onClick={isBuy ? setMaxBuy : setMaxSell}
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
                   style={{
-                    fontSize: 10,
-                    color: isBuy ? 'var(--accent)' : 'var(--red)',
-                    fontFamily: 'var(--font-mono)',
-                    fontWeight: 700,
-                    letterSpacing: 0.5,
+                    width: '100%', padding: '15px',
+                    borderRadius: 13,
+                    fontFamily: 'var(--font-mono)', fontWeight: 700,
+                    fontSize: 14, letterSpacing: 1.5,
+                    transition: 'all 0.2s',
+                    background: canSubmit ? accentBg : 'rgba(255,255,255,0.04)',
+                    color: canSubmit ? accentColor : 'var(--muted)',
+                    border: `1px solid ${canSubmit ? accentBorder : 'rgba(255,255,255,0.07)'}`,
+                    boxShadow: canSubmit ? `0 0 24px ${accentGlow}, inset 0 1px 0 rgba(255,255,255,0.08)` : 'none',
+                    cursor: canSubmit ? 'pointer' : 'not-allowed',
+                    opacity: canSubmit ? 1 : 0.45,
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                  onMouseEnter={e => {
+                    if (canSubmit) {
+                      e.currentTarget.style.transform = 'translateY(-1px)'
+                      e.currentTarget.style.boxShadow = `0 0 36px ${accentGlow}, inset 0 1px 0 rgba(255,255,255,0.1)`
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = canSubmit ? `0 0 24px ${accentGlow}, inset 0 1px 0 rgba(255,255,255,0.08)` : 'none'
                   }}
                 >
-                  MAX
+                  {isLimit
+                    ? (isBuy ? '⏳ QUEUE LIMIT BUY' : '⏳ QUEUE LIMIT SELL')
+                    : (isBuy ? '▲ BUY' : '▼ SELL')} {asset.symbol}
                 </button>
-              </div>
-              <input
-                type="number"
-                value={qty}
-                onChange={e => setQty(e.target.value)}
-                placeholder="0.00"
-                min="0"
-                step="any"
-                style={{
-                  width: '100%',
-                  background: 'var(--bg3)',
-                  border: `1px solid ${quantity > 0 ? (isBuy ? 'rgba(192,132,252,0.4)' : 'rgba(248,113,113,0.4)') : 'var(--border)'}`,
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  color: 'var(--text)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 18,
-                  fontWeight: 700,
-                  outline: 'none',
-                  transition: 'border 0.2s',
-                }}
-              />
-            </div>
-
-            {/* Total */}
-            <div style={{
-              background: 'rgba(30,23,53,0.8)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              padding: '12px 16px',
-              marginBottom: 16,
-              display: 'flex', justifyContent: 'space-between',
-            }}>
-              <span style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', letterSpacing: 1 }}>TOTAL</span>
-              <span style={{
-                fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 16,
-                color: isBuy ? 'var(--accent)' : 'var(--red)',
-              }}>
-                ${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              </span>
-            </div>
-
-            {/* Info */}
-            <div style={{ marginBottom: 16, fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Cash: <span style={{ color: 'var(--gold)' }}>${cash.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></span>
-              {holding && <span>Owned: <span style={{ color: 'var(--text)' }}>{holding.quantity}</span></span>}
-            </div>
-
-            {/* Warnings */}
-            {quantity > 0 && isBuy && !canAfford && (
-              <div style={{ color: 'var(--red)', fontSize: 11, fontFamily: 'var(--font-mono)', marginBottom: 12, textAlign: 'center' }}>
-                ⚠ Insufficient funds
-              </div>
+              </>
             )}
-            {quantity > 0 && !isBuy && !hasEnough && (
-              <div style={{ color: 'var(--red)', fontSize: 11, fontFamily: 'var(--font-mono)', marginBottom: 12, textAlign: 'center' }}>
-                ⚠ Not enough holdings
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: 12,
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 700,
-                fontSize: 14,
-                letterSpacing: 1,
-                background: canSubmit
-                  ? (isBuy
-                    ? 'linear-gradient(135deg, rgba(167,139,250,0.4), rgba(103,232,249,0.25))'
-                    : 'rgba(248,113,113,0.25)')
-                  : 'var(--bg3)',
-                color: canSubmit ? (isBuy ? '#c084fc' : '#f87171') : 'var(--muted)',
-                border: canSubmit
-                  ? (isBuy ? '1px solid rgba(192,132,252,0.5)' : '1px solid rgba(248,113,113,0.4)')
-                  : '1px solid var(--border)',
-                transition: 'all 0.2s',
-                opacity: canSubmit ? 1 : 0.5,
-                boxShadow: canSubmit ? (isBuy ? 'var(--glow-accent)' : '0 0 14px rgba(248,113,113,0.2)') : 'none',
-              }}
-            >
-              {isBuy ? '▲ BUY' : '▼ SELL'} {asset.symbol}
-            </button>
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   )

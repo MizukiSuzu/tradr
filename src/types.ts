@@ -27,9 +27,29 @@ export interface Trade {
   price: number
   total: number
   timestamp: number
+  reasoning?: string
+  costBasis?: number  // avg buy price at time of sell — used for realized P&L
 }
 
 export interface PortfolioSnapshot {
   timestamp: number
   value: number
+}
+
+export interface PriceAlert {
+  id: string
+  assetId: string
+  direction: 'above' | 'below'
+  targetPrice: number
+  createdAt: number
+}
+
+export interface LimitOrder {
+  id: string
+  assetId: string
+  type: 'buy' | 'sell'
+  quantity: number
+  limitPrice: number
+  reservedCash: number
+  createdAt: number
 }
