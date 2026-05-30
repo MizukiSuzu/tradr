@@ -74,6 +74,11 @@ body {
 button { cursor: pointer; border: none; background: none; font-family: inherit; }
 input { font-family: inherit; }
 
+/* Hide native number input spinners — we use custom steppers */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
 .up { color: var(--green); }
 .down { color: var(--red); }
 

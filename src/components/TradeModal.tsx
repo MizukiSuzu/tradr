@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { Asset } from '../types'
+import NumberInput from './NumberInput'
 
 interface Props {
   asset: Asset
@@ -250,9 +251,16 @@ export default function TradeModal({ asset, type: initialType, onClose, onToast 
                       color: isActive ? tabColor : 'var(--muted)',
                       border: isActive ? `1px solid ${tabBorder}` : '1px solid transparent',
                       boxShadow: isActive ? `0 0 16px ${t === 'buy' ? 'rgba(192,132,252,0.2)' : 'rgba(248,113,113,0.15)'}` : 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                     }}
                   >
-                    {t === 'buy' ? '▲ BUY' : '▼ SELL'}
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      {t === 'buy'
+                        ? <path d="M6 1L11 10H1L6 1Z" fill="currentColor" opacity="0.9" />
+                        : <path d="M6 11L1 2H11L6 11Z" fill="currentColor" opacity="0.9" />
+                      }
+                    </svg>
+                    {t === 'buy' ? 'BUY' : 'SELL'}
                   </button>
                 )
               })}
@@ -314,7 +322,14 @@ export default function TradeModal({ asset, type: initialType, onClose, onToast 
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 22,
                   }}>
-                    {isLimit ? '⏳' : (isBuy ? '▲' : '▼')}
+                  {isLimit ? '⏳' : (
+                    <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
+                      {isBuy
+                        ? <path d="M6 1L11 10H1L6 1Z" fill="white" opacity="0.9" />
+                        : <path d="M6 11L1 2H11L6 11Z" fill="white" opacity="0.9" />
+                      }
+                    </svg>
+                  )}
                   </div>
                 </div>
                 <div>
@@ -342,24 +357,31 @@ export default function TradeModal({ asset, type: initialType, onClose, onToast 
                         position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
                         fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 16,
                         color: 'var(--accent2)', opacity: 0.6,
-                        pointerEvents: 'none',
+                        pointerEvents: 'none', zIndex: 1,
                       }}>$</span>
-                      <input
-                        type="number"
+                      <NumberInput
                         value={limitPrice}
-                        onChange={e => setLimitPrice(e.target.value)}
+                        onChange={setLimitPrice}
                         placeholder={fmtPrice(asset.price)}
+                        step={asset.price > 100 ? 1 : asset.price > 1 ? 0.01 : 0.0001}
+                        min={0}
                         autoFocus
-                        style={{
-                          width: '100%', background: 'rgba(103,232,249,0.05)',
+                        fontSize={17}
+                        accentColor="rgba(103,232,249,0.9)"
+                        accentBorder="rgba(103,232,249,0.5)"
+                        accentGlow="rgba(103,232,249,0.3)"
+                        inputStyle={{
+                          width: '100%',
+                          background: 'rgba(103,232,249,0.05)',
                           border: `1px solid ${parseFloat(limitPrice) > 0 ? 'rgba(103,232,249,0.4)' : 'rgba(103,232,249,0.15)'}`,
-                          borderRadius: 11, padding: '12px 14px 12px 28px',
-                          color: 'var(--text)', fontFamily: 'var(--font-mono)',
-                          fontSize: 17, fontWeight: 700, outline: 'none',
+                          borderRadius: 11,
+                          padding: '12px 36px 12px 28px',
                           transition: 'border-color 0.2s',
                         }}
-                        onFocus={e => (e.currentTarget.style.borderColor = 'rgba(103,232,249,0.5)')}
-                        onBlur={e => (e.currentTarget.style.borderColor = parseFloat(limitPrice) > 0 ? 'rgba(103,232,249,0.4)' : 'rgba(103,232,249,0.15)')}
+                        onFocus={() => {
+                          const el = document.activeElement as HTMLInputElement
+                          if (el) el.style.borderColor = 'rgba(103,232,249,0.5)'
+                        }}
                       />
                     </div>
                   </div>
@@ -386,29 +408,30 @@ export default function TradeModal({ asset, type: initialType, onClose, onToast 
                     </button>
                   </div>
                   <div style={{ position: 'relative' }}>
-                    <input
-                      type="number"
+                    <NumberInput
                       value={qty}
-                      onChange={e => setQty(e.target.value)}
+                      onChange={setQty}
                       placeholder="0.00"
-                      min="0" step="any"
-                      style={{
+                      step={asset.price > 1000 ? 0.001 : asset.price > 100 ? 0.01 : asset.price > 1 ? 0.1 : 1}
+                      min={0}
+                      fontSize={22}
+                      accentColor={accentColor}
+                      accentBorder={accentBorder}
+                      accentGlow={accentGlow}
+                      inputStyle={{
                         width: '100%',
                         background: quantity > 0 ? `${accentColor}08` : 'rgba(255,255,255,0.03)',
                         border: `1px solid ${quantity > 0 ? accentBorder : 'rgba(255,255,255,0.09)'}`,
-                        borderRadius: 11, padding: '14px 16px',
-                        color: 'var(--text)', fontFamily: 'var(--font-mono)',
-                        fontSize: 22, fontWeight: 700, outline: 'none',
+                        borderRadius: 11,
+                        padding: '14px 36px 14px 16px',
                         transition: 'all 0.2s',
-                        boxShadow: quantity > 0 ? `0 0 16px ${accentGlow}` : 'none',
                       }}
-                      onFocus={e => (e.currentTarget.style.borderColor = accentBorder)}
-                      onBlur={e => (e.currentTarget.style.borderColor = quantity > 0 ? accentBorder : 'rgba(255,255,255,0.09)')}
                     />
                     {quantity > 0 && (
                       <div style={{
-                        position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+                        position: 'absolute', right: 36, top: '50%', transform: 'translateY(-50%)',
                         fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
+                        pointerEvents: 'none',
                       }}>
                         units
                       </div>
@@ -522,7 +545,18 @@ export default function TradeModal({ asset, type: initialType, onClose, onToast 
                 >
                   {isLimit
                     ? (isBuy ? '⏳ QUEUE LIMIT BUY' : '⏳ QUEUE LIMIT SELL')
-                    : (isBuy ? '▲ BUY' : '▼ SELL')} {asset.symbol}
+                    : (
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                          {isBuy
+                            ? <path d="M6 1L11 10H1L6 1Z" fill="currentColor" opacity="0.9" />
+                            : <path d="M6 11L1 2H11L6 11Z" fill="currentColor" opacity="0.9" />
+                          }
+                        </svg>
+                        {isBuy ? 'BUY' : 'SELL'} {asset.symbol}
+                      </span>
+                    )
+                  }
                 </button>
               </>
             )}

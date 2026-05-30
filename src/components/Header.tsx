@@ -7,6 +7,8 @@ interface Props {
   setTab: (t: Tab) => void
   loading: boolean
   onRefresh: () => void
+  notifOpen: boolean
+  setNotifOpen: (v: boolean) => void
 }
 
 const TAB_ICONS: Record<Tab, string> = {
@@ -16,11 +18,13 @@ const TAB_ICONS: Record<Tab, string> = {
   traders: '◉',
 }
 
-export default function Header({ tab, setTab, loading, onRefresh }: Props) {
+export default function Header({ tab, setTab, loading, onRefresh, notifOpen, setNotifOpen }: Props) {
   const cash = useStore(s => s.cash)
   const totalValue = useStore(s => s.totalValue)
   const resetPortfolio = useStore(s => s.resetPortfolio)
   const lastUpdated = useStore(s => s.lastUpdated)
+  const notifications = useStore(s => s.notifications)
+  const unreadCount = notifications.length
 
   const total = totalValue()
   const pnl = total - STARTING_BALANCE
@@ -176,6 +180,54 @@ export default function Header({ tab, setTab, loading, onRefresh }: Props) {
                 ↻
               </button>
             )}
+
+            {/* Bell */}
+            <button
+              onClick={() => setNotifOpen(!notifOpen)}
+              title="Notifications"
+              style={{
+                position: 'relative',
+                background: notifOpen ? 'rgba(192,132,252,0.12)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${notifOpen ? 'rgba(192,132,252,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                borderRadius: 10,
+                width: 34, height: 34,
+                color: notifOpen ? 'var(--accent)' : 'var(--muted)',
+                fontSize: 16,
+                transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: notifOpen ? '0 0 16px rgba(192,132,252,0.25)' : 'none',
+              }}
+              onMouseEnter={e => {
+                if (!notifOpen) {
+                  e.currentTarget.style.color = 'var(--accent)'
+                  e.currentTarget.style.borderColor = 'var(--border-hi)'
+                  e.currentTarget.style.background = 'rgba(192,132,252,0.08)'
+                }
+              }}
+              onMouseLeave={e => {
+                if (!notifOpen) {
+                  e.currentTarget.style.color = 'var(--muted)'
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                }
+              }}
+            >
+              🔔
+              {unreadCount > 0 && (
+                <div style={{
+                  position: 'absolute', top: -5, right: -5,
+                  minWidth: 16, height: 16, borderRadius: 8,
+                  background: 'linear-gradient(135deg, #c084fc, #67e8f9)',
+                  color: '#0c0818',
+                  fontSize: 9, fontWeight: 800, fontFamily: 'var(--font-mono)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '0 4px',
+                  boxShadow: '0 0 10px rgba(192,132,252,0.6)',
+                }}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </div>
+              )}
+            </button>
 
             {/* Reset */}
             <button

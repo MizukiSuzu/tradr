@@ -15,6 +15,7 @@ interface PortfolioStore {
   triggeredAlerts: { msg: string; id: string }[]
   executedOrders: { msg: string; id: string }[]
   favourites: string[]
+  notifications: { id: string; msg: string; ok: boolean; timestamp: number }[]
 
   updatePrices: (updates: Record<string, { price: number; change24h: number; changePct: number }>) => void
   buy: (assetId: string, quantity: number) => { ok: boolean; msg: string }
@@ -38,6 +39,10 @@ interface PortfolioStore {
 
   // Favourites
   toggleFavourite: (assetId: string) => void
+
+  // Notifications
+  addNotification: (msg: string, ok: boolean) => void
+  clearNotifications: () => void
 }
 
 export const useStore = create<PortfolioStore>()(
@@ -54,6 +59,7 @@ export const useStore = create<PortfolioStore>()(
       triggeredAlerts: [],
       executedOrders: [],
       favourites: [],
+      notifications: [],
 
       updatePrices: (updates) => {
         set(s => ({
@@ -287,7 +293,15 @@ export const useStore = create<PortfolioStore>()(
           ? s.favourites.filter(id => id !== assetId)
           : [...s.favourites, assetId]
       })),
+
+      addNotification: (msg, ok) => set(s => ({
+        notifications: [
+          { id: Date.now().toString(), msg, ok, timestamp: Date.now() },
+          ...s.notifications,
+        ].slice(0, 100), // keep last 100
+      })),
+      clearNotifications: () => set({ notifications: [] }),
     }),
-    { name: 'marketsim-portfolio' }
+    { name: 'tradr-portfolio' }
   )
 )

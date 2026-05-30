@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../store'
 import { Asset, AssetClass } from '../types'
 import { CLASS_LABELS } from '../assets'
+import NumberInput from './NumberInput'
 
 interface Props {
   onTrade: (asset: Asset, type: 'buy' | 'sell') => void
@@ -243,24 +244,23 @@ function AlertForm({ asset, onClose }: { asset: Asset; onClose: () => void }) {
           <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 8, letterSpacing: 1 }}>
             TARGET PRICE (current: ${asset.price < 1 ? asset.price.toFixed(4) : asset.price.toLocaleString(undefined, { maximumFractionDigits: 2 })})
           </div>
-          <input
-            type="number"
+          <NumberInput
             value={price}
-            onChange={e => setPrice(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && submit()}
+            onChange={setPrice}
             placeholder="0.00"
+            step={asset.price > 100 ? 1 : asset.price > 1 ? 0.01 : 0.0001}
+            min={0}
             autoFocus
-            style={{
+            fontSize={16}
+            accentColor="rgba(252,211,77,0.9)"
+            accentBorder="rgba(252,211,77,0.5)"
+            accentGlow="rgba(252,211,77,0.25)"
+            inputStyle={{
               width: '100%',
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(252,211,77,0.3)',
               borderRadius: 10,
-              padding: '10px 14px',
-              color: 'var(--text)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 16,
-              fontWeight: 700,
-              outline: 'none',
+              padding: '10px 36px 10px 14px',
             }}
           />
         </div>
