@@ -337,7 +337,7 @@ export const useAgentStore = create<AgentStore>()(
               'Authorization': `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: 'llama-3.1-8b-instant',
+              model: 'openai/gpt-oss-20b',
               max_tokens: 120,
               messages: [
                 { role: 'system', content: systemPrompt },
