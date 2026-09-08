@@ -338,7 +338,8 @@ export const useAgentStore = create<AgentStore>()(
             },
             body: JSON.stringify({
               model: 'openai/gpt-oss-20b',
-              max_tokens: 120,
+              max_tokens: 400,
+              reasoning_effort: 'low',
               messages: [
                 { role: 'system', content: systemPrompt },
                 ...messages,
@@ -347,7 +348,7 @@ export const useAgentStore = create<AgentStore>()(
           })
 
           const data = await response.json()
-          const reply = data.choices?.[0]?.message?.content ?? '...'
+          const reply = data.choices?.[0]?.message?.content?.trim() || '[no response — try again]'
 
           const agentMsg: ChatMessage = { role: 'agent', content: reply, timestamp: Date.now() }
 
