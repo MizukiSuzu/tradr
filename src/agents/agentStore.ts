@@ -215,85 +215,49 @@ function buildSystemPrompt(agent: AgentState, assets: Asset[]): string {
   const sorted = [...assets].filter(a => a.price > 0).sort((a, b) => b.changePct - a.changePct)
   const topGainer = sorted[0]
   const topLoser = sorted[sorted.length - 1]
-  const marketLines = assets.map(a =>
-    `  - ${a.symbol}: $${a.price.toFixed(2)} (${a.changePct >= 0 ? '+' : ''}${a.changePct.toFixed(2)}% today)`
-  ).join('\n')
 
-  // ── Sensei / mentor path ────────────────────────────────────────────────
   if (personality.isMentor) {
-    return `You are Sensei Stocks — a former macro economist and market sage on the TRADR platform. ${personality.bio}
+    return `You are Sensei Stocks. ${personality.bio}
 
-Your voice: ${personality.voice}
+Respond like a wise mentor texting a young trader. Be brief and human.
 
-You do NOT trade. You observe, interpret, and teach. When someone asks you about the market, you give thoughtful, educational, context-rich answers grounded in the live data below.
-
-Current market snapshot:
-${marketLines}
-- Top gainer today: ${topGainer?.symbol} ${topGainer?.changePct >= 0 ? '+' : ''}${topGainer?.changePct.toFixed(2)}%
-- Top loser today: ${topLoser?.symbol} ${topLoser?.changePct.toFixed(2)}%
+Market now: ${topGainer?.symbol} +${topGainer?.changePct.toFixed(1)}%, ${topLoser?.symbol} ${topLoser?.changePct.toFixed(1)}%.
 
 Rules:
-- Stay fully in character at all times. Never break character or mention being an AI.
-- Keep responses to 3–5 sentences. Thoughtful but not a lecture.
-- Weave in current market data naturally when relevant.
-- End every response with a brief principle, proverb, or reflection — your signature.
-- You may gently reference what the other traders might be doing wrong (without naming them directly), as a teaching moment.
-- Do NOT give specific buy/sell recommendations. You teach principles, not picks.`
+- Max 2 sentences. No lists or headers. One short proverb at the end.
+- Never break character or mention AI.`
   }
 
-  // ── Trader path (original) ───────────────────────────────────────────────
   const totalVal = calcTotalValue(agent, assets)
   const pnl = totalVal - STARTING_BALANCE
-  const pnlPct = ((pnl / STARTING_BALANCE) * 100).toFixed(2)
+  const pnlPct = ((pnl / STARTING_BALANCE) * 100).toFixed(1)
   const sign = pnl >= 0 ? '+' : ''
 
   const holdingLines = agent.holdings.map(h => {
     const asset = assets.find(a => a.id === h.assetId)
     if (!asset) return null
-    const currentVal = asset.price * h.quantity
     const pnlPct2 = (((asset.price - h.avgBuyPrice) / h.avgBuyPrice) * 100).toFixed(1)
-    return `  - ${asset.symbol}: ${h.quantity} units @ avg $${h.avgBuyPrice.toFixed(2)} | current $${asset.price.toFixed(2)} | P&L ${pnlPct2}%`
-  }).filter(Boolean).join('\n') || '  - No holdings'
+    return `${asset.symbol}: ${pnlPct2}% P&L`
+  }).filter(Boolean).join(', ') || 'no holdings'
 
-  const recentTrades = agent.trades.slice(0, 3).map(t => {
-    const asset = assets.find(a => a.id === t.assetId)
-    return `  - ${t.type.toUpperCase()} ${asset?.symbol ?? t.assetId} x${t.quantity} @ $${t.price.toFixed(2)} — "${t.reasoning}"`
-  }).join('\n') || '  - No recent trades'
+  const lastTrade = agent.trades[0]
+  const lastTradeAsset = lastTrade ? assets.find(a => a.id === lastTrade.assetId) : null
+  const lastTradeStr = lastTrade
+    ? `Last trade: ${lastTrade.type.toUpperCase()} ${lastTradeAsset?.symbol} @ $${lastTrade.price.toFixed(2)}`
+    : 'No trades yet'
 
-  const holdingsWithPnl = agent.holdings.map(h => {
-    const asset = assets.find(a => a.id === h.assetId)
-    if (!asset) return null
-    return { symbol: asset.symbol, pnl: asset.price - h.avgBuyPrice }
-  }).filter(Boolean) as { symbol: string; pnl: number }[]
-
-  const bestHolding = holdingsWithPnl.sort((a, b) => b.pnl - a.pnl)[0]
-  const worstHolding = holdingsWithPnl.sort((a, b) => a.pnl - b.pnl)[0]
-
-  return `You are ${personality.name}, a trader on the TRADR platform. ${personality.bio}
+  return `You are ${personality.name} on TRADR, a market simulator. ${personality.bio}
 
 Your personality: ${personality.voice}
-Your strategy: ${personality.strategy}
 
-Current portfolio:
-- Cash: $${agent.cash.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-- Total value: $${totalVal.toLocaleString(undefined, { maximumFractionDigits: 2 })} (${sign}${pnlPct}% vs starting $100,000)
-- Holdings:
-${holdingLines}
-- Recent trades:
-${recentTrades}
+Your portfolio: $${totalVal.toLocaleString(undefined, { maximumFractionDigits: 0 })} total (${sign}${pnlPct}%). Holdings: ${holdingLines}. ${lastTradeStr}.
+Market: ${topGainer?.symbol} up ${topGainer?.changePct.toFixed(1)}%, ${topLoser?.symbol} down ${Math.abs(topLoser?.changePct ?? 0).toFixed(1)}%.
 
-Current market snapshot:
-- Top gainer today: ${topGainer?.symbol} ${topGainer?.changePct >= 0 ? '+' : ''}${topGainer?.changePct.toFixed(2)}%
-- Top loser today: ${topLoser?.symbol} ${topLoser?.changePct.toFixed(2)}%
-${bestHolding ? `- Your best holding: ${bestHolding.symbol}` : ''}
-${worstHolding && worstHolding !== bestHolding ? `- Your worst holding: ${worstHolding.symbol}` : ''}
-
-Rules:
-- Stay fully in character at all times. Never break character or mention being an AI.
-- Keep responses under 3 sentences. Be direct and punchy.
-- Reference your actual portfolio data and recent trades when relevant.
-- React to market conditions naturally based on your personality.
-- Do NOT give financial advice or disclaimers. You're a character, not an advisor.`
+Rules — follow these strictly:
+- Stay in character. Never mention AI.
+- Max 1-2 short sentences. Casual, human, punchy. No bullet points, no headers.
+- Reference your portfolio or trades if relevant. React to the market like your personality would.
+- No financial disclaimers. You're a character, not an advisor.`
 }
 
 // ─── Store ─────────────────────────────────────────────────────────────────
@@ -351,10 +315,10 @@ export const useAgentStore = create<AgentStore>()(
         const userMsg: ChatMessage = { role: 'user', content: userMessage, timestamp: Date.now() }
         const updatedHistory = [...agent.chatHistory, userMsg].slice(-20)
 
-        // Optimistically add the user message
+        // Add user message + set typing indicator
         set(s => ({
           agents: s.agents.map((a, i) =>
-            i === agentIndex ? { ...a, chatHistory: updatedHistory } : a
+            i === agentIndex ? { ...a, chatHistory: updatedHistory, isTyping: true } : a
           ),
         }))
 
@@ -374,7 +338,7 @@ export const useAgentStore = create<AgentStore>()(
             },
             body: JSON.stringify({
               model: 'llama-3.1-8b-instant',
-              max_tokens: 300,
+              max_tokens: 120,
               messages: [
                 { role: 'system', content: systemPrompt },
                 ...messages,
@@ -390,7 +354,7 @@ export const useAgentStore = create<AgentStore>()(
           set(s => ({
             agents: s.agents.map((a, i) =>
               i === agentIndex
-                ? { ...a, chatHistory: [...updatedHistory, agentMsg].slice(-20) }
+                ? { ...a, chatHistory: [...updatedHistory, agentMsg].slice(-20), isTyping: false }
                 : a
             ),
           }))
@@ -403,7 +367,7 @@ export const useAgentStore = create<AgentStore>()(
           set(s => ({
             agents: s.agents.map((a, i) =>
               i === agentIndex
-                ? { ...a, chatHistory: [...updatedHistory, errMsg].slice(-20) }
+                ? { ...a, chatHistory: [...updatedHistory, errMsg].slice(-20), isTyping: false }
                 : a
             ),
           }))

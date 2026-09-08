@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAgentStore } from '../agents/agentStore'
 import { useStore } from '../store'
-import { STARTING_BALANCE, CLASS_COLORS } from '../assets'
+import { STARTING_BALANCE } from '../assets'
 import { AgentState } from '../agents/agentTypes'
 
 const PERSONALITY_COLORS: Record<string, string> = {
@@ -97,7 +97,7 @@ function Leaderboard({ agents, playerValue }: { agents: AgentState[]; playerValu
   )
 }
 
-// ─── Trader card ─────────────────────────────────────────────────────────────
+// ─── Active trader card (no portfolio) ───────────────────────────────────────
 
 function TraderCard({ agent, assets, isSelected, onSelect }: {
   agent: AgentState
@@ -106,16 +106,7 @@ function TraderCard({ agent, assets, isSelected, onSelect }: {
   onSelect: () => void
 }) {
   const { personality } = agent
-  const pnl = agent.totalValue - STARTING_BALANCE
-  const pnlPct = (pnl / STARTING_BALANCE) * 100
   const color = PERSONALITY_COLORS[personality.id] ?? 'var(--accent)'
-
-  const topHoldings = [...agent.holdings]
-    .map(h => ({ h, asset: assets.find(a => a.id === h.assetId), val: 0 }))
-    .map(x => ({ ...x, val: x.asset ? x.asset.price * x.h.quantity : 0 }))
-    .filter(x => x.asset)
-    .sort((a, b) => b.val - a.val)
-    .slice(0, 3)
 
   const lastTrade = agent.trades[0]
   const lastTradeAsset = lastTrade ? assets.find(a => a.id === lastTrade.assetId) : null
@@ -124,108 +115,75 @@ function TraderCard({ agent, assets, isSelected, onSelect }: {
     <div onClick={onSelect} style={{
       background: isSelected ? `${color}14` : 'rgba(22,16,43,0.7)',
       border: `1px solid ${isSelected ? color + '80' : 'var(--border)'}`,
-      borderRadius: 16, padding: '18px 20px',
+      borderRadius: 16, padding: '16px 18px',
       cursor: 'pointer', transition: 'all 0.2s',
       boxShadow: isSelected ? `0 0 24px ${color}22` : 'none',
     }}
       onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.borderColor = color + '60'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
       onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)' } }}
     >
-      {/* Header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Avatar circle */}
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <div style={{
+          width: 42, height: 42, borderRadius: 12,
+          background: `${color}18`, border: `1.5px solid ${color}55`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 22, flexShrink: 0,
+        }}>{personality.avatar}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: 15, color }}>{personality.name}</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{personality.bio}</div>
+        </div>
+        {personality.isMentor && (
           <div style={{
-            width: 48, height: 48, borderRadius: 14,
-            background: `${color}18`, border: `1.5px solid ${color}55`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24, flexShrink: 0,
-          }}>{personality.avatar}</div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color }}>{personality.name}</div>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, maxWidth: 200 }}>{personality.bio}</div>
-          </div>
-        </div>
-
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          {personality.isMentor ? (
-            <div style={{
-              background: `${color}18`, border: `1px solid ${color}55`,
-              borderRadius: 8, padding: '5px 12px',
-              fontSize: 10, fontWeight: 700, color,
-              fontFamily: 'var(--font-mono)', letterSpacing: 1,
-            }}>MENTOR</div>
-          ) : (
-            <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 17 }}>${fmt(agent.totalValue)}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: pnlColor(pnl), fontWeight: 700, marginTop: 2 }}>
-                {pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
-              </div>
-            </>
-          )}
-        </div>
+            background: `${color}18`, border: `1px solid ${color}55`,
+            borderRadius: 8, padding: '4px 10px',
+            fontSize: 9, fontWeight: 700, color,
+            fontFamily: 'var(--font-mono)', letterSpacing: 1, flexShrink: 0,
+          }}>MENTOR</div>
+        )}
       </div>
 
-      {/* Holdings chips */}
-      {!personality.isMentor && topHoldings.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-          {topHoldings.map(({ h, asset, val }) => {
-            const assetPnlPct = h.avgBuyPrice > 0 ? ((asset!.price - h.avgBuyPrice) / h.avgBuyPrice) * 100 : 0
-            const assetColor = CLASS_COLORS[asset!.class] ?? 'var(--accent)'
-            return (
-              <div key={h.assetId} style={{
-                background: 'rgba(30,23,53,0.8)', border: `1px solid ${assetColor}30`,
-                borderRadius: 8, padding: '5px 10px',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: assetColor }}>{asset!.symbol}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>${fmt(val)}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: pnlColor(assetPnlPct), fontWeight: 700 }}>
-                  {assetPnlPct >= 0 ? '+' : ''}{assetPnlPct.toFixed(1)}%
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Last trade quote */}
-      {!personality.isMentor && lastTrade && lastTradeAsset && (
+      {/* Last trade / mentor note */}
+      {!personality.isMentor && lastTrade && lastTradeAsset ? (
         <div style={{
-          background: 'rgba(15,10,30,0.6)', borderRadius: 10, padding: '10px 14px',
+          background: 'rgba(15,10,30,0.6)', borderRadius: 10, padding: '9px 12px',
           borderLeft: `3px solid ${lastTrade.type === 'buy' ? 'var(--green)' : 'var(--red)'}`,
-          marginBottom: 14,
+          marginBottom: 12,
         }}>
           <span style={{ color: lastTrade.type === 'buy' ? 'var(--green)' : 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, marginRight: 8 }}>
             {lastTrade.type.toUpperCase()} {lastTradeAsset.symbol}
           </span>
-          <span style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>{lastTrade.reasoning}</span>
-          <div style={{ marginTop: 4, fontSize: 10, color: 'var(--faint)', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.5 }}>{lastTrade.reasoning}</span>
+          <div style={{ marginTop: 3, fontSize: 9, color: 'var(--faint)', fontFamily: 'var(--font-mono)' }}>
             {new Date(lastTrade.timestamp).toLocaleTimeString()}
           </div>
         </div>
-      )}
-
-      {personality.isMentor && (
+      ) : personality.isMentor ? (
         <div style={{
-          background: 'rgba(15,10,30,0.6)', borderRadius: 10, padding: '10px 14px',
-          borderLeft: `3px solid ${color}`, marginBottom: 14,
+          background: 'rgba(15,10,30,0.6)', borderRadius: 10, padding: '9px 12px',
+          borderLeft: `3px solid ${color}`, marginBottom: 12,
           fontSize: 12, color: 'var(--muted)',
         }}>
           Observing the market. Ask him anything.
+        </div>
+      ) : (
+        <div style={{ marginBottom: 12, fontSize: 11, color: 'var(--faint)', fontFamily: 'var(--font-mono)', padding: '6px 0' }}>
+          No trades yet
         </div>
       )}
 
       {/* Chat button */}
       <button style={{
-        width: '100%', padding: '9px',
+        width: '100%', padding: '8px',
         borderRadius: 10,
         background: isSelected ? color : 'transparent',
         color: isSelected ? '#0f0a1e' : color,
         border: `1px solid ${color}80`,
-        fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 12, letterSpacing: 0.5,
+        fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, letterSpacing: 0.5,
         transition: 'all 0.2s',
         boxShadow: isSelected ? `0 0 16px ${color}40` : 'none',
+        cursor: 'pointer',
       }}>
         {isSelected
           ? (personality.isMentor ? '📖 CONSULTING' : '💬 CHATTING')
@@ -239,22 +197,20 @@ function TraderCard({ agent, assets, isSelected, onSelect }: {
 
 function ChatPanel({ agent }: { agent: AgentState }) {
   const [input, setInput] = useState('')
-  const [sending, setSending] = useState(false)
   const sendMessage = useAgentStore(s => s.sendMessage)
   const bottomRef = useRef<HTMLDivElement>(null)
   const color = PERSONALITY_COLORS[agent.personality.id] ?? 'var(--accent)'
+  const sending = agent.isTyping ?? false
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [agent.chatHistory])
+  }, [agent.chatHistory, sending])
 
   const send = async () => {
     const msg = input.trim()
     if (!msg || sending) return
     setInput('')
-    setSending(true)
-    await sendMessage(agent.personality.id, msg)
-    setSending(false)
+    sendMessage(agent.personality.id, msg)
   }
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -305,7 +261,7 @@ function ChatPanel({ agent }: { agent: AgentState }) {
               borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
               padding: '11px 15px',
               fontSize: 13, lineHeight: 1.55,
-              color: msg.role === 'agent' ? 'var(--text)' : 'var(--text)',
+              color: 'var(--text)',
               boxShadow: msg.role === 'agent' ? `0 0 14px ${color}15` : 'none',
             }}>
               {msg.content}
@@ -316,14 +272,23 @@ function ChatPanel({ agent }: { agent: AgentState }) {
           </div>
         ))}
         {sending && (
-          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ fontSize: 18, lineHeight: 1 }}>{agent.personality.avatar}</div>
             <div style={{
               background: `linear-gradient(135deg, ${color}1a, ${color}0a)`,
               border: `1px solid ${color}45`,
               borderRadius: '16px 16px 16px 4px',
-              padding: '12px 18px', color, fontSize: 20, letterSpacing: 6,
+              padding: '12px 16px',
+              display: 'flex', gap: 5, alignItems: 'center',
             }}>
-              <span style={{ animation: 'pulse 1s ease-in-out infinite' }}>•••</span>
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: color,
+                  opacity: 0.7,
+                  animation: `typingDot 1.2s ease-in-out ${i * 0.2}s infinite`,
+                }} />
+              ))}
             </div>
           </div>
         )}
@@ -387,6 +352,9 @@ export default function TradersTab() {
     )
   }
 
+  const activeTraders = agents.filter(a => !a.personality.isMentor)
+  const mentor = agents.find(a => a.personality.isMentor)
+
   return (
     <div style={{ animation: 'slideIn 0.3s ease' }}>
       {/* Page header */}
@@ -394,15 +362,20 @@ export default function TradersTab() {
         <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 2, marginBottom: 6 }}>COMMUNITY</div>
         <h2 style={{ fontFamily: 'var(--font-sans)', fontWeight: 800, fontSize: 28, margin: 0 }}>Traders</h2>
         <div style={{ marginTop: 6, fontSize: 13, color: 'var(--muted)' }}>
-          {agents.filter(a => !a.personality.isMentor).length} active traders · 1 mentor
+          {activeTraders.length} active traders · {mentor ? '1 mentor' : ''}
         </div>
       </div>
 
       <Leaderboard agents={agents} playerValue={playerValue} />
 
+      {/* Active traders section */}
+      <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 1.5, fontWeight: 700, marginBottom: 16 }}>
+        ACTIVE TRADERS
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, alignItems: 'start' }}>
         {/* Left: trader cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {agents.map(agent => (
             <TraderCard
               key={agent.personality.id}

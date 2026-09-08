@@ -45,4 +45,5 @@ export interface AgentState {
   trades: AgentTrade[]
   totalValue: number
   chatHistory: ChatMessage[]
+  isTyping?: boolean
 }

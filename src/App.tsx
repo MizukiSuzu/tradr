@@ -9,6 +9,7 @@ import PortfolioTab from './components/PortfolioTab'
 import TradeModal from './components/TradeModal'
 import Toast from './components/Toast'
 import TradersTab from './components/TradersTab'
+import FloatingChat from './components/FloatingChat'
 import { useAgentStore } from './agents/agentStore'
 import { Asset } from './types'
 
@@ -99,6 +100,7 @@ export default function App() {
         />
       )}
       <NotificationDrawer open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <FloatingChat />
       <div style={{ position: 'fixed', bottom: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 10, zIndex: 9000 }}>
         {toasts.map(t => <Toast key={t.id} msg={t.msg} ok={t.ok} />)}
       </div>

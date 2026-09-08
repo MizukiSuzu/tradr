@@ -62,10 +62,61 @@ export default function PortfolioTab({ onTrade }: Props) {
   const pnlPct = (pnl / STARTING_BALANCE) * 100
   const isUp = pnl >= 0
 
-  const chartData = history.map(h => ({
-    time: new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    value: h.value,
-  }))
+  const [timeframe, setTimeframe] = useState<'1m' | '1h' | '1d' | '1mo' | '1y'>('1m')
+
+  type TF = typeof timeframe
+  const TF_CONFIG: Record<TF, {
+    label: string
+    windowMs: number
+    bucketMs: number
+    tickFmt: (ts: number) => string
+  }> = {
+    '1m':  { label: '1M',  windowMs: 60 * 1000,           bucketMs: 0,              tickFmt: ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) },
+    '1h':  { label: '1H',  windowMs: 60 * 60 * 1000,      bucketMs: 60 * 1000,      tickFmt: ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    '1d':  { label: '1D',  windowMs: 24 * 60 * 60 * 1000, bucketMs: 60 * 60 * 1000, tickFmt: ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    '1mo': { label: '1MO', windowMs: 30 * 24 * 60 * 60 * 1000, bucketMs: 24 * 60 * 60 * 1000, tickFmt: ts => new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' }) },
+    '1y':  { label: '1Y',  windowMs: 365 * 24 * 60 * 60 * 1000, bucketMs: 7 * 24 * 60 * 60 * 1000, tickFmt: ts => new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' }) },
+  }
+
+  const chartData = (() => {
+    if (history.length === 0) return []
+    const cfg = TF_CONFIG[timeframe]
+    const now = Date.now()
+
+    // Filter to requested window; fall back to all history if fewer than 2 points inside
+    const windowed = history.filter(h => h.timestamp >= now - cfg.windowMs)
+    const source = windowed.length >= 2 ? windowed : history
+
+    // Pick tick format based on the actual span of data we're showing
+    const spanMs = source[source.length - 1].timestamp - source[0].timestamp
+    const tickFmt = (ts: number) => {
+      if (spanMs < 24 * 60 * 60 * 1000) {
+        return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+      return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' })
+    }
+
+    // 1m: no bucketing, show every raw point
+    if (cfg.bucketMs === 0) {
+      return source.map(h => ({ time: tickFmt(h.timestamp), value: h.value, ts: h.timestamp }))
+    }
+
+    // Auto-shrink bucket size if the whole session is shorter than the timeframe,
+    // so we always get at least ~4 distinct buckets and the chart stays visible
+    let bucketMs = cfg.bucketMs
+    while (spanMs / bucketMs < 4 && bucketMs > 60 * 1000) {
+      bucketMs = Math.floor(bucketMs / 4)
+    }
+
+    const buckets: Record<number, number> = {}
+    for (const h of source) {
+      const key = Math.floor(h.timestamp / bucketMs) * bucketMs
+      buckets[key] = h.value
+    }
+    return Object.entries(buckets)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([ts, value]) => ({ time: tickFmt(Number(ts)), value, ts: Number(ts) }))
+  })()
 
   const statCards = STAT_CARDS(total, cash, invested, pnl, pnlPct, isUp)
 
@@ -242,7 +293,16 @@ export default function PortfolioTab({ onTrade }: Props) {
       )}
 
       {/* Chart */}
-      {chartData.length > 1 && (
+      {chartData.length > 1 && (() => {
+        const values = chartData.map(d => d.value)
+        const minVal = Math.min(...values)
+        const maxVal = Math.max(...values)
+        const range = maxVal - minVal
+        // If nearly flat (< 0.5% swing), use ±2% window so movement is visible
+        const pad = range < maxVal * 0.005 ? maxVal * 0.02 : range * 0.15
+        const yMin = Math.max(0, Math.floor((minVal - pad) / 100) * 100)
+        const yMax = Math.ceil((maxVal + pad) / 100) * 100
+        return (
         <div style={{
           background: 'rgba(22,16,43,0.7)',
           border: '1px solid var(--border)',
@@ -253,18 +313,41 @@ export default function PortfolioTab({ onTrade }: Props) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
             <div>
               <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 1.5, marginBottom: 4 }}>PORTFOLIO VALUE</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18, color: isUp ? 'var(--green)' : 'var(--red)' }}>
-                {isUp ? '+' : ''}{pnlPct.toFixed(2)}%
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18, color: isUp ? 'var(--green)' : 'var(--red)' }}>
+                  {isUp ? '+' : ''}{pnlPct.toFixed(2)}%
+                </div>
+                <div style={{
+                  background: isUp ? 'rgba(134,239,172,0.1)' : 'rgba(248,113,113,0.1)',
+                  border: `1px solid ${isUp ? 'rgba(134,239,172,0.3)' : 'rgba(248,113,113,0.3)'}`,
+                  borderRadius: 6, padding: '3px 9px',
+                  fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
+                  color: isUp ? 'var(--green)' : 'var(--red)',
+                }}>
+                  {isUp ? '▲ PROFIT' : '▼ LOSS'}
+                </div>
               </div>
             </div>
-            <div style={{
-              background: isUp ? 'rgba(134,239,172,0.1)' : 'rgba(248,113,113,0.1)',
-              border: `1px solid ${isUp ? 'rgba(134,239,172,0.3)' : 'rgba(248,113,113,0.3)'}`,
-              borderRadius: 8, padding: '4px 12px',
-              fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
-              color: isUp ? 'var(--green)' : 'var(--red)',
-            }}>
-              {isUp ? '▲ PROFIT' : '▼ LOSS'}
+            {/* Timeframe selector */}
+            <div style={{ display: 'flex', gap: 3, background: 'rgba(12,8,24,0.6)', borderRadius: 10, padding: 3, border: '1px solid var(--border)' }}>
+              {(['1m', '1h', '1d', '1mo', '1y'] as const).map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  style={{
+                    padding: '5px 11px',
+                    borderRadius: 7,
+                    fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                    background: timeframe === tf ? 'rgba(192,132,252,0.2)' : 'transparent',
+                    color: timeframe === tf ? 'var(--accent)' : 'var(--muted)',
+                    border: timeframe === tf ? '1px solid rgba(192,132,252,0.4)' : '1px solid transparent',
+                    transition: 'all 0.15s',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {TF_CONFIG[tf].label}
+                </button>
+              ))}
             </div>
           </div>
           <ResponsiveContainer width="100%" height={180}>
@@ -275,8 +358,8 @@ export default function PortfolioTab({ onTrade }: Props) {
                   <stop offset="95%" stopColor={isUp ? '#86efac' : '#f87171'} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="time" tick={{ fontFamily: 'Space Mono', fontSize: 9, fill: '#7c6fa0' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontFamily: 'Space Mono', fontSize: 9, fill: '#7c6fa0' }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
+              <XAxis dataKey="time" interval="preserveStartEnd" tick={{ fontFamily: 'Space Mono', fontSize: 9, fill: '#7c6fa0' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[yMin, yMax]} tick={{ fontFamily: 'Space Mono', fontSize: 9, fill: '#7c6fa0' }} tickFormatter={v => `$${(v / 1000).toFixed(1)}k`} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{
                   background: 'rgba(22,16,43,0.95)', border: '1px solid rgba(148,100,255,0.3)',
@@ -289,7 +372,8 @@ export default function PortfolioTab({ onTrade }: Props) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      )}
+        )
+      })()}
 
       {/* Holdings header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
