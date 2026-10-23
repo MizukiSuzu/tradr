@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useStore } from './store'
 import { fetchQuotes } from './data'
+import type { SearchResult } from './data'
+import WatchlistTab from './components/WatchlistTab'
+import StockPage from './components/StockPage'
 import Header from './components/Header'
 import Loader from './components/Loader'
 import Ticker from './components/Ticker'
@@ -20,7 +23,7 @@ export default function App() {
   const executedOrders = useStore(s => s.executedOrders)
   const dismissExecutedOrder = useStore(s => s.dismissExecutedOrder)
   const addNotification = useStore(s => s.addNotification)
-  const [tab, setTab] = useState<Tab>('portfolio')
+  const [tab, setTab] = useState<Tab>('watchlist')
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy')
   const [toasts, setToasts] = useState<{ id: string; msg: string; ok: boolean }[]>([])
@@ -28,6 +31,7 @@ export default function App() {
   const [notifOpen, setNotifOpen] = useState(false)
   const [viewing, setViewing] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
+  const [summary, setSummary] = useState<string | null>(null) // used by Task 8
 
   // Watch for triggered price alerts
   useEffect(() => {
@@ -83,6 +87,12 @@ export default function App() {
     setTradeType(type)
   }
 
+  const openSymbol = (symbol: string) => { setViewing(symbol); window.scrollTo(0, 0) }
+  const onSelectSymbol = (r: SearchResult) => {
+    upsertAssets([{ id: r.symbol, symbol: r.symbol, name: r.name, class: r.type, price: 0, change24h: 0, changePct: 0 }])
+    openSymbol(r.symbol)
+  }
+
   const showToast = (msg: string, ok: boolean) => {
     const id = Date.now().toString()
     setToasts(prev => [...prev, { id, msg, ok }])
@@ -93,7 +103,7 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {loading && <Loader />}
-      <Header tab={tab} setTab={setTab} loading={loading} onRefresh={refresh} notifOpen={notifOpen} setNotifOpen={setNotifOpen} />
+      <Header tab={tab} setTab={t => { setViewing(null); setTab(t) }} onSelectSymbol={onSelectSymbol} loading={loading} onRefresh={refresh} notifOpen={notifOpen} setNotifOpen={setNotifOpen} />
       <Ticker />
       <main style={{ flex: 1, maxWidth: 1200, margin: '0 auto', width: '100%', padding: '0 20px 60px' }}>
         {stale && (
@@ -101,8 +111,15 @@ export default function App() {
             Data may be stale: the market data provider is rate-limiting. Showing last known prices.
           </div>
         )}
-        {tab === 'portfolio' && <PortfolioTab onTrade={openTrade} />}
-        {tab === 'history'   && <HistoryTab />}
+        {viewing ? (
+          <StockPage symbol={viewing} onTrade={openTrade} onBack={() => setViewing(null)} onSummary={setSummary} />
+        ) : (
+          <>
+            {tab === 'watchlist' && <WatchlistTab onOpen={openSymbol} />}
+            {tab === 'portfolio' && <PortfolioTab onTrade={openTrade} />}
+            {tab === 'history'   && <HistoryTab />}
+          </>
+        )}
       </main>
       {selectedAsset && (
         <TradeModal

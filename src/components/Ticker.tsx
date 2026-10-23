@@ -1,8 +1,24 @@
+import { useEffect, useState } from 'react'
 import { useStore } from '../store'
+import { fetchHistory } from '../data'
 
 export default function Ticker() {
-  const assets = useStore(s => s.assets)
-  const priced = assets.filter(a => a.price > 0)
+  const watchlist = useStore(s => s.watchlist)
+  const [priced, setPriced] = useState<{ id: string; symbol: string; price: number; changePct: number }[]>([])
+
+  // Uses cached daily history (shared with the watchlist rows), so no extra quote calls
+  useEffect(() => {
+    let alive = true
+    Promise.allSettled(watchlist.map(fetchHistory)).then(results => {
+      if (!alive) return
+      setPriced(results.flatMap((r, i) => {
+        if (r.status !== 'fulfilled' || r.value.length < 2) return []
+        const [prev, last] = r.value.slice(-2)
+        return [{ id: watchlist[i], symbol: watchlist[i], price: last.close, changePct: (last.close / prev.close - 1) * 100 }]
+      }))
+    })
+    return () => { alive = false }
+  }, [watchlist])
 
   if (priced.length === 0) return null
 

@@ -1,7 +1,10 @@
 import { useStore, STARTING_BALANCE } from '../store'
 import { Tab } from '../App'
+import SymbolSearch from './SymbolSearch'
+import type { SearchResult } from '../data'
 
 interface Props {
+  onSelectSymbol: (r: SearchResult) => void
   tab: Tab
   setTab: (t: Tab) => void
   loading: boolean
@@ -16,7 +19,7 @@ const TAB_ICONS: Record<Tab, string> = {
   history: '◷',
 }
 
-export default function Header({ tab, setTab, loading, onRefresh, notifOpen, setNotifOpen }: Props) {
+export default function Header({ tab, setTab, loading, onRefresh, notifOpen, setNotifOpen, onSelectSymbol }: Props) {
   const cash = useStore(s => s.cash)
   const totalValue = useStore(s => s.totalValue)
   const resetPortfolio = useStore(s => s.resetPortfolio)
@@ -74,9 +77,10 @@ export default function Header({ tab, setTab, loading, onRefresh, notifOpen, set
               margin: '0 4px',
             }} />
             <span style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', letterSpacing: 0.5 }}>
-              Trading Playground
+              Market Foresight
             </span>
           </div>
+          <SymbolSearch onSelect={onSelectSymbol} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {/* Portfolio value */}
