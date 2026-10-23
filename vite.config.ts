@@ -13,17 +13,11 @@ export default defineConfig(({ mode }) => {
         name: 'dev-api-chat',
         configureServer(server) {
           server.middlewares.use('/api/chat', async (req, res) => {
-            const chunks: Buffer[] = []
-            for await (const chunk of req) chunks.push(chunk)
-            const { POST } = await server.ssrLoadModule('/api/chat.ts')
-            const response: Response = await POST(new Request('http://localhost/api/chat', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: Buffer.concat(chunks),
-            }))
-            res.statusCode = response.status
-            res.setHeader('Content-Type', 'application/json')
-            res.end(await response.text())
+            let raw = ''
+            for await (const chunk of req) raw += chunk
+            try { (req as any).body = JSON.parse(raw) } catch { (req as any).body = undefined }
+            const { default: handler } = await server.ssrLoadModule('/api/chat.ts')
+            await handler(req, res)
           })
         },
       },
