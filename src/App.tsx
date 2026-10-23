@@ -1,36 +1,33 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useStore } from './store'
-import { fetchCryptoPrices, fetchStockPrices, getBondPrices } from './prices'
+import { fetchQuotes } from './data'
 import Header from './components/Header'
 import Loader from './components/Loader'
 import Ticker from './components/Ticker'
-import MarketTab from './components/MarketTab'
 import PortfolioTab from './components/PortfolioTab'
 import TradeModal from './components/TradeModal'
 import Toast from './components/Toast'
-import TradersTab from './components/TradersTab'
-import FloatingChat from './components/FloatingChat'
-import { useAgentStore } from './agents/agentStore'
 import { Asset } from './types'
 
-export type Tab = 'market' | 'portfolio' | 'history' | 'traders'
+export type Tab = 'watchlist' | 'portfolio' | 'history'
 
 export default function App() {
   const updatePrices = useStore(s => s.updatePrices)
-  const assets = useStore(s => s.assets)
-  const tickAgents = useAgentStore(s => s.tickAgents)
-  const initAgents = useAgentStore(s => s.initAgents)
+  const upsertAssets = useStore(s => s.upsertAssets)
+  const trackedSymbols = useStore(s => s.trackedSymbols)
   const triggeredAlerts = useStore(s => s.triggeredAlerts)
   const dismissTriggeredAlert = useStore(s => s.dismissTriggeredAlert)
   const executedOrders = useStore(s => s.executedOrders)
   const dismissExecutedOrder = useStore(s => s.dismissExecutedOrder)
   const addNotification = useStore(s => s.addNotification)
-  const [tab, setTab] = useState<Tab>('market')
+  const [tab, setTab] = useState<Tab>('portfolio')
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy')
   const [toasts, setToasts] = useState<{ id: string; msg: string; ok: boolean }[]>([])
   const [loading, setLoading] = useState(true)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [viewing, setViewing] = useState<string | null>(null)
+  const [stale, setStale] = useState(false)
 
   // Watch for triggered price alerts
   useEffect(() => {
@@ -50,21 +47,34 @@ export default function App() {
     }
   }, [executedOrders])
 
+  // Delayed quotes only for what needs a live price: the viewed ticker, holdings, orders, alerts
   const refresh = useCallback(async () => {
-    const [crypto, stocks, bonds] = await Promise.all([
-      fetchCryptoPrices(),
-      Promise.resolve(fetchStockPrices()),
-      Promise.resolve(getBondPrices()),
-    ])
-    updatePrices({ ...crypto, ...stocks, ...bonds })
-    tickAgents(useStore.getState().assets)
+    const symbols = trackedSymbols(viewing)
+    if (symbols.length > 0) {
+      try {
+        const quotes = await fetchQuotes(symbols)
+        const existing = useStore.getState().assets
+        upsertAssets(Object.values(quotes).map(q => ({
+          id: q.symbol,
+          symbol: q.symbol,
+          name: q.name,
+          class: existing.find(a => a.id === q.symbol)?.class ?? 'stock',
+          price: q.price,
+          change24h: q.change,
+          changePct: q.changePct,
+        })))
+        updatePrices(Object.fromEntries(Object.values(quotes).map(q => [q.symbol, { price: q.price, change24h: q.change, changePct: q.changePct }])))
+        setStale(false)
+      } catch {
+        setStale(true) // keep last known prices
+      }
+    }
     setLoading(false)
-  }, [updatePrices, tickAgents])
+  }, [viewing, trackedSymbols, upsertAssets, updatePrices])
 
   useEffect(() => {
-    initAgents(assets)
     refresh()
-    const interval = setInterval(refresh, 30_000)
+    const interval = setInterval(refresh, 300_000)
     return () => clearInterval(interval)
   }, [refresh])
 
@@ -86,10 +96,13 @@ export default function App() {
       <Header tab={tab} setTab={setTab} loading={loading} onRefresh={refresh} notifOpen={notifOpen} setNotifOpen={setNotifOpen} />
       <Ticker />
       <main style={{ flex: 1, maxWidth: 1200, margin: '0 auto', width: '100%', padding: '0 20px 60px' }}>
-        {tab === 'market'    && <MarketTab onTrade={openTrade} />}
+        {stale && (
+          <div style={{ margin: '16px 0 0', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--gold)', border: '1px solid rgba(252,211,77,0.3)' }}>
+            Data may be stale: the market data provider is rate-limiting. Showing last known prices.
+          </div>
+        )}
         {tab === 'portfolio' && <PortfolioTab onTrade={openTrade} />}
         {tab === 'history'   && <HistoryTab />}
-        {tab === 'traders'   && <TradersTab />}
       </main>
       {selectedAsset && (
         <TradeModal
@@ -100,7 +113,6 @@ export default function App() {
         />
       )}
       <NotificationDrawer open={notifOpen} onClose={() => setNotifOpen(false)} />
-      <FloatingChat />
       <div style={{ position: 'fixed', bottom: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 10, zIndex: 9000 }}>
         {toasts.map(t => <Toast key={t.id} msg={t.msg} ok={t.ok} />)}
       </div>

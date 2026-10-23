@@ -1,5 +1,4 @@
-import { useStore } from '../store'
-import { STARTING_BALANCE } from '../assets'
+import { useStore, STARTING_BALANCE } from '../store'
 import { Tab } from '../App'
 
 interface Props {
@@ -12,10 +11,9 @@ interface Props {
 }
 
 const TAB_ICONS: Record<Tab, string> = {
-  market: '◈',
+  watchlist: '◈',
   portfolio: '⬡',
   history: '◷',
-  traders: '◉',
 }
 
 export default function Header({ tab, setTab, loading, onRefresh, notifOpen, setNotifOpen }: Props) {
@@ -32,10 +30,9 @@ export default function Header({ tab, setTab, loading, onRefresh, notifOpen, set
   const isUp = pnl >= 0
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'market', label: 'Markets' },
+    { id: 'watchlist', label: 'Watchlist' },
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'history', label: 'History' },
-    { id: 'traders', label: 'Traders' },
   ]
 
   return (

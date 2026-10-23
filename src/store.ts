@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Asset, Holding, Trade, PortfolioSnapshot, PriceAlert, LimitOrder } from './types'
-import { ASSETS, STARTING_BALANCE } from './assets'
+export const STARTING_BALANCE = 100_000
+export const DEFAULT_WATCHLIST = ['SPY', 'AAPL', 'NVDA', 'MSFT', 'TSLA', 'AMZN']
 
 interface PortfolioStore {
   cash: number
@@ -14,7 +15,7 @@ interface PortfolioStore {
   pendingOrders: LimitOrder[]
   triggeredAlerts: { msg: string; id: string }[]
   executedOrders: { msg: string; id: string }[]
-  favourites: string[]
+  watchlist: string[]
   notifications: { id: string; msg: string; ok: boolean; timestamp: number }[]
 
   updatePrices: (updates: Record<string, { price: number; change24h: number; changePct: number }>) => void
@@ -37,8 +38,10 @@ interface PortfolioStore {
   executePendingOrders: (assets: Asset[]) => void
   dismissExecutedOrder: (id: string) => void
 
-  // Favourites
-  toggleFavourite: (assetId: string) => void
+  // Watchlist + real tickers
+  toggleWatch: (symbol: string) => void
+  upsertAssets: (list: Asset[]) => void
+  trackedSymbols: (viewing: string | null) => string[]
 
   // Notifications
   addNotification: (msg: string, ok: boolean) => void
@@ -51,14 +54,14 @@ export const useStore = create<PortfolioStore>()(
       cash: STARTING_BALANCE,
       holdings: [],
       trades: [],
-      assets: ASSETS,
+      assets: [],
       history: [],
       lastUpdated: null,
       alerts: [],
       pendingOrders: [],
       triggeredAlerts: [],
       executedOrders: [],
-      favourites: [],
+      watchlist: DEFAULT_WATCHLIST,
       notifications: [],
 
       updatePrices: (updates) => {
@@ -286,13 +289,31 @@ export const useStore = create<PortfolioStore>()(
 
       dismissExecutedOrder: (id) => set(s => ({ executedOrders: s.executedOrders.filter(o => o.id !== id) })),
 
-      // ── Favourites ──────────────────────────────────────────────────────────
-
-      toggleFavourite: (assetId) => set(s => ({
-        favourites: s.favourites.includes(assetId)
-          ? s.favourites.filter(id => id !== assetId)
-          : [...s.favourites, assetId]
+      toggleWatch: (symbol) => set(s => ({
+        watchlist: s.watchlist.includes(symbol)
+          ? s.watchlist.filter(x => x !== symbol)
+          : [...s.watchlist, symbol],
       })),
+
+      // Merge by id; never overwrite a known price with 0
+      upsertAssets: (list) => set(s => {
+        const byId = new Map(s.assets.map(a => [a.id, a]))
+        for (const a of list) {
+          const old = byId.get(a.id)
+          byId.set(a.id, old && a.price === 0 ? { ...a, price: old.price, change24h: old.change24h, changePct: old.changePct } : a)
+        }
+        return { assets: [...byId.values()] }
+      }),
+
+      trackedSymbols: (viewing) => {
+        const { holdings, pendingOrders, alerts } = get()
+        return [...new Set([
+          ...(viewing ? [viewing] : []),
+          ...holdings.map(h => h.assetId),
+          ...pendingOrders.map(o => o.assetId),
+          ...alerts.map(a => a.assetId),
+        ])]
+      },
 
       addNotification: (msg, ok) => set(s => ({
         notifications: [
@@ -302,6 +323,11 @@ export const useStore = create<PortfolioStore>()(
       })),
       clearNotifications: () => set({ notifications: [] }),
     }),
-    { name: 'tradr-portfolio' }
+    {
+      name: 'tradr-portfolio',
+      version: 2,
+      // v1 held simulated assets (renamed tickers, bonds, crypto) that no longer exist: start fresh
+      migrate: () => ({}),
+    }
   )
 )

@@ -11,10 +11,8 @@ interface Props {
 }
 
 const CLASS_GLOW: Record<string, { from: string; to: string; glow: string }> = {
-  crypto: { from: '#a78bfa', to: '#67e8f9', glow: 'rgba(167,139,250,0.35)' },
   stock:  { from: '#67e8f9', to: '#a78bfa', glow: 'rgba(103,232,249,0.3)' },
   etf:    { from: '#fcd34d', to: '#f9a8d4', glow: 'rgba(252,211,77,0.3)' },
-  bond:   { from: '#86efac', to: '#67e8f9', glow: 'rgba(134,239,172,0.3)' },
 }
 
 export default function TradeModal({ asset, type: initialType, onClose, onToast }: Props) {
@@ -37,7 +35,7 @@ export default function TradeModal({ asset, type: initialType, onClose, onToast 
 
   const isBuy = type === 'buy'
   const isLimit = orderMode === 'limit'
-  const palette = CLASS_GLOW[asset.class] ?? CLASS_GLOW.crypto
+  const palette = CLASS_GLOW[asset.class] ?? CLASS_GLOW.stock
 
   const accentColor = isBuy ? '#c084fc' : '#f87171'
   const accentGlow = isBuy ? 'rgba(192,132,252,0.3)' : 'rgba(248,113,113,0.3)'

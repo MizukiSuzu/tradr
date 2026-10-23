@@ -1,16 +1,13 @@
-export type AssetClass = 'crypto' | 'stock' | 'bond' | 'etf'
+export type AssetClass = 'stock' | 'etf'
 
 export interface Asset {
-  id: string
+  id: string        // uppercase ticker, same as symbol
   symbol: string
   name: string
   class: AssetClass
   price: number
   change24h: number
   changePct: number
-  volume: string
-  marketCap: string
-  realSymbol?: string // what to fetch from API
 }
 
 export interface Holding {

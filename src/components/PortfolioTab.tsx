@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { useStore } from '../store'
+import { useStore, STARTING_BALANCE } from '../store'
 import { Asset } from '../types'
-import { CLASS_COLORS, STARTING_BALANCE } from '../assets'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 interface Props {
@@ -125,11 +124,9 @@ export default function PortfolioTab({ onTrade }: Props) {
   const [hoveredSlice, setHoveredSlice] = useState<string | null>(null)
 
   const PIE_CLASS_COLORS: Record<string, string> = {
-    crypto: '#a78bfa',
-    stock:  '#67e8f9',
-    etf:    '#fcd34d',
-    bond:   '#86efac',
-    cash:   '#7060a0',
+    stock: '#67e8f9',
+    etf:   '#fcd34d',
+    cash:  '#7060a0',
   }
 
   const byClassData = (() => {
@@ -427,7 +424,7 @@ export default function PortfolioTab({ onTrade }: Props) {
               const gain = currentValue - costBasis
               const gainPct = costBasis > 0 ? (gain / costBasis) * 100 : 0
               const isGain = gain >= 0
-              const color = CLASS_COLORS[asset.class] ?? 'var(--accent)'
+              const color = PIE_CLASS_COLORS[asset.class] ?? 'var(--accent)'
 
               return (
                 <div key={h.assetId} style={{
