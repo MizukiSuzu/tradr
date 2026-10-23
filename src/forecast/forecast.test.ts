@@ -65,3 +65,46 @@ test('probAbove is monotonic and bounded', () => {
 test('too little history throws', () => {
   assert.throws(() => buildCone(makeCloses(10), 21), /Not enough history/)
 })
+
+import { sma, rsi, realizedVol, computeSignals, toneCounts } from './signals.ts'
+
+test('sma basics', () => {
+  assert.equal(sma([1, 2, 3, 4], 2), 3.5)
+  assert.equal(sma([1, 2, 3, 4], 2, 1), 1.5)
+  assert.equal(sma([1, 2], 3), null)
+})
+
+test('rsi on known series', () => {
+  const up = Array.from({ length: 30 }, (_, i) => 100 + i)
+  const down = Array.from({ length: 30 }, (_, i) => 100 - i)
+  const alt = Array.from({ length: 15 }, (_, i) => (i % 2 === 0 ? 100 : 101)) // 14 changes: 7 up, 7 down
+  assert.equal(rsi(up), 100)
+  assert.equal(rsi(down), 0)
+  assert.equal(rsi(alt), 50)
+  assert.equal(rsi([1, 2, 3]), null)
+})
+
+test('realizedVol is zero for constant prices', () => {
+  assert.equal(realizedVol(new Array(30).fill(10)), 0)
+})
+
+test('trend detects uptrend and golden cross', () => {
+  // 230 flat days then a steady climb: 50-day SMA crosses above 200-day recently
+  const closes = [...new Array(230).fill(100), ...Array.from({ length: 15 }, (_, i) => 100 + (i + 1) * 2)]
+  const trend = computeSignals(closes).find(s => s.id === 'trend')!
+  assert.equal(trend.tone, 'bullish')
+  assert.match(trend.detail, /golden cross/i)
+})
+
+test('computeSignals always returns 4 signals and counts them', () => {
+  const sigs = computeSignals(makeCloses(300))
+  assert.deepEqual(sigs.map(s => s.id), ['trend', 'momentum', 'rsi', 'volatility'])
+  const c = toneCounts(sigs)
+  assert.equal(c.bullish + c.neutral + c.bearish, 4)
+})
+
+test('short history still returns 4 neutral-safe signals', () => {
+  const sigs = computeSignals(makeCloses(40))
+  assert.equal(sigs.length, 4)
+  assert.equal(sigs[0].tone, 'neutral')
+})
