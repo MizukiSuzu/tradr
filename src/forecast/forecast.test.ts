@@ -150,15 +150,15 @@ test('summary is compact and mentions the key numbers', () => {
   const bars = makeBars(600)
   const closes = bars.map(b => b.close)
   const s = summarizeForecast({
-    symbol: 'TEST', name: 'Test Corp', price: closes[closes.length - 1],
+    symbol: 'TEST', name: 'Test Corp',
     cone: buildCone(closes, 21, { paths: 500 }),
     signals: computeSignals(closes),
     track: buildTrackRecord(bars, { paths: 300 }),
-    position: { quantity: 3, avgBuyPrice: 90 },
+    openCall: { call: 'up', horizon: 21, startDate: '2024-05-01', startClose: 90 },
   })
   assert.ok(s.length < 2000)
   assert.match(s, /TEST/)
   assert.match(s, /95%/)
   assert.match(s, /inside/)
-  assert.match(s, /3 shares/)
+  assert.match(s, /called UP/)
 })

@@ -1,17 +1,18 @@
 # TRADR
 
-Market foresight and paper trading for any US stock or ETF. TRADR pulls real daily prices, projects where a price is likely to be in a week, a month or three months as probability ranges, and shows how well those projections held up in the past. Practice trading with a simulated $100,000. No real money involved.
+A stock prediction game built on real market data. Pick any US stock or ETF, see where its price is statistically likely to go, and call **Up** or **Down**. The forecast sets the odds: calls it thought unlikely pay more. Play instant **Replay** rounds on hidden past data, or make **Live** calls on today's close that resolve on a later visit.
 
 **Live demo:** https://tradr-ashy.vercel.app
 
 ## Features
 
-- **Any US ticker**: search stocks and ETFs; real prices via Twelve Data (quotes delayed, refreshed every 5 minutes)
+- **Any US ticker**: search stocks and ETFs; real daily prices via Twelve Data
 - **Probability cone**: 5,000 simulated paths from the stock's own last year of daily returns (block bootstrap), shown as 68% and 95% ranges, plus "chance above $X"
 - **Signals**: trend (50/200-day averages, golden/death crosses), 20-day momentum, RSI(14), volatility regime, each explained in one sentence
 - **Track record**: for each of the last 12 months, a cone built only from data available then, compared with where the price actually landed
-- **Paper trading**: market and limit orders, price alerts, fractional shares, portfolio charts, realized P&L
-- **TRADR Analyst**: AI chat (Groq) that explains the numbers on screen; it never recommends trades
+- **Prediction game**: call Up or Down over 1 week, 1 month or 3 months. A correct call pays `100 × (1 − the cone's probability for that side)`; a miss scores 0. Score, streak and accuracy are kept in your browser
+- **Replay and Live**: Replay drops you at a random past date with the future hidden and scores you instantly; Live calls use today's close and resolve when you come back
+- **TRADR Analyst**: AI chat (Groq) that explains the numbers on screen; it never tells you which way to call
 
 Forecasts are statistical projections from past prices, not financial advice.
 
@@ -20,10 +21,10 @@ Forecasts are statistical projections from past prices, not financial advice.
 | Tool | Role |
 |---|---|
 | React 18 + TypeScript + Vite | UI and build |
-| Zustand + persist | Portfolio state in localStorage |
+| Zustand + persist | Watchlist and prediction state in localStorage |
 | Recharts | Price, cone and track-record charts |
 | Vercel functions (`api/`) | Server-side proxies that keep API keys off the client, with CDN caching |
-| Twelve Data API | Symbol search, delayed quotes, daily history |
+| Twelve Data API | Symbol search and daily history |
 | Groq API | Analyst chat |
 
 ## Getting started
@@ -51,7 +52,7 @@ The Vite dev server also serves the `api/` functions, so no Vercel CLI is needed
 npm test
 ```
 
-runs the forecast engine tests with Node's built-in test runner.
+runs the forecast and game tests with Node's built-in test runner.
 
 ## Project structure
 
@@ -59,14 +60,14 @@ runs the forecast engine tests with Node's built-in test runner.
 api/
 ├── _twelvedata.ts       # Shared upstream fetch + validation (not a route)
 ├── search.ts            # GET /api/search?q=
-├── quote.ts             # GET /api/quote?symbols=
 ├── history.ts           # GET /api/history?symbol=
 └── chat.ts              # POST /api/chat (Groq)
 src/
 ├── forecast/            # Pure TS engine: cone, signals, track record, chat summary + tests
+├── game/              # Scoring: points, resolution, replay start, stats + tests
 ├── data.ts              # Client fetchers, history cache, rate limiter
-├── store.ts             # Portfolio, orders, alerts, watchlist
-└── components/          # Watchlist, StockPage, Portfolio, TradeModal, AnalystChat, …
+├── store.ts             # Watchlist and predictions
+└── components/          # Watchlist, StockPage, Replay, Predictions, AnalystChat, …
 ```
 
 ## How the forecast works
@@ -82,7 +83,7 @@ Results are seeded by ticker and date, so the same data gives the same cone.
 
 | Name | Where | Used by |
 |---|---|---|
-| `TWELVEDATA_API_KEY` | `.env` and Vercel | `api/search.ts`, `api/quote.ts`, `api/history.ts` |
+| `TWELVEDATA_API_KEY` | `.env` and Vercel | `api/search.ts`, `api/history.ts` |
 | `GROQ_API_KEY` | `.env` and Vercel | `api/chat.ts` |
 
 Keys are read only on the server. Don't prefix them with `VITE_`: Vite would inline them into the public bundle.

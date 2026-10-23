@@ -26,7 +26,7 @@ Browser (React + Zustand)
  ├─ search   ──► /api/search?q=nvd           Twelve Data /symbol_search   s-maxage=86400
  ├─ quote    ──► /api/quote?symbols=A,B      Twelve Data /quote           s-maxage=300
  ├─ history  ──► /api/history?symbol=NVDA    Twelve Data /time_series     s-maxage=21600
- │                                           (interval=1day, outputsize=520)
+ │                                           (interval=1day, outputsize=640)
  ├─ src/forecast/  pure functions on the history: cone, signals, track record
  └─ chat     ──► /api/chat                   Groq (existing), now receives a forecast summary
 ```

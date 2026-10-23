@@ -1,4 +1,5 @@
-import { useStore, STARTING_BALANCE } from '../store'
+import { useStore } from '../store'
+import { stats } from '../game/scoring'
 import { Tab } from '../App'
 import SymbolSearch from './SymbolSearch'
 import type { SearchResult } from '../data'
@@ -7,35 +8,23 @@ interface Props {
   onSelectSymbol: (r: SearchResult) => void
   tab: Tab
   setTab: (t: Tab) => void
-  loading: boolean
-  onRefresh: () => void
-  notifOpen: boolean
-  setNotifOpen: (v: boolean) => void
 }
 
 const TAB_ICONS: Record<Tab, string> = {
   watchlist: '◈',
-  portfolio: '⬡',
-  history: '◷',
+  replay: '↺',
+  predictions: '◎',
 }
 
-export default function Header({ tab, setTab, loading, onRefresh, notifOpen, setNotifOpen, onSelectSymbol }: Props) {
-  const cash = useStore(s => s.cash)
-  const totalValue = useStore(s => s.totalValue)
-  const resetPortfolio = useStore(s => s.resetPortfolio)
-  const lastUpdated = useStore(s => s.lastUpdated)
-  const notifications = useStore(s => s.notifications)
-  const unreadCount = notifications.length
-
-  const total = totalValue()
-  const pnl = total - STARTING_BALANCE
-  const pnlPct = (pnl / STARTING_BALANCE) * 100
-  const isUp = pnl >= 0
+export default function Header({ tab, setTab, onSelectSymbol }: Props) {
+  const predictions = useStore(s => s.predictions)
+  const reset = useStore(s => s.reset)
+  const st = stats(predictions)
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'watchlist', label: 'Watchlist' },
-    { id: 'portfolio', label: 'Portfolio' },
-    { id: 'history', label: 'History' },
+    { id: 'replay', label: 'Replay' },
+    { id: 'predictions', label: 'Predictions' },
   ]
 
   return (
@@ -82,182 +71,17 @@ export default function Header({ tab, setTab, loading, onRefresh, notifOpen, set
           </div>
           <SymbolSearch onSelect={onSelectSymbol} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Portfolio value */}
-            <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 12,
-              padding: '8px 16px',
-              textAlign: 'right',
-            }}>
-              <div style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginBottom: 3, letterSpacing: 1.5 }}>PORTFOLIO</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18 }}>
-                  ${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </span>
-                <span style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  color: isUp ? 'var(--green)' : 'var(--red)',
-                  fontWeight: 700,
-                  background: isUp ? 'rgba(134,239,172,0.1)' : 'rgba(248,113,113,0.1)',
-                  border: `1px solid ${isUp ? 'rgba(134,239,172,0.2)' : 'rgba(248,113,113,0.2)'}`,
-                  borderRadius: 5,
-                  padding: '1px 6px',
-                }}>
-                  {isUp ? '+' : ''}{pnlPct.toFixed(2)}%
-                </span>
-              </div>
-            </div>
-
-            {/* Cash badge */}
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(252,211,77,0.1), rgba(252,211,77,0.04))',
-              border: '1px solid rgba(252,211,77,0.25)',
-              borderRadius: 12,
-              padding: '8px 16px',
-              boxShadow: '0 0 20px rgba(252,211,77,0.06)',
-            }}>
-              <div style={{ fontSize: 9, color: 'rgba(252,211,77,0.6)', fontFamily: 'var(--font-mono)', marginBottom: 3, letterSpacing: 1.5 }}>CASH</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 15, color: 'var(--gold)' }}>
-                ${cash.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              </div>
-            </div>
-
-            {/* Refresh */}
-            {loading ? (
-              <div style={{ position: 'relative', width: 34, height: 34 }}>
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  borderRadius: '50%',
-                  border: '2px solid var(--faint)',
-                }} />
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  borderRadius: '50%',
-                  border: '2px solid transparent',
-                  borderTopColor: 'var(--accent)',
-                  borderRightColor: 'rgba(192,132,252,0.4)',
-                  animation: 'spin 0.8s linear infinite',
-                }} />
-                <div style={{
-                  position: 'absolute',
-                  top: '50%', left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: 6, height: 6,
-                  borderRadius: '50%',
-                  background: 'var(--accent)',
-                  boxShadow: '0 0 8px var(--accent)',
-                }} />
-              </div>
-            ) : (
-              <button
-                onClick={onRefresh}
-                title="Refresh prices"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 10,
-                  width: 34, height: 34,
-                  color: 'var(--muted)',
-                  fontSize: 16,
-                  transition: 'all 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.color = 'var(--accent)'
-                  e.currentTarget.style.borderColor = 'var(--border-hi)'
-                  e.currentTarget.style.boxShadow = 'var(--glow-accent)'
-                  e.currentTarget.style.background = 'rgba(192,132,252,0.08)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.color = 'var(--muted)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
-                  e.currentTarget.style.boxShadow = 'none'
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-                }}
-              >
-                ↻
-              </button>
-            )}
-
-            {/* Bell */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Stat label="SCORE" value={String(st.score)} color="var(--accent)" />
+            <Stat label="STREAK" value={String(st.streak)} color="var(--gold)" />
+            <Stat label="ACCURACY" value={st.accuracy === null ? '—' : `${Math.round(st.accuracy * 100)}%`} color="var(--green)" />
             <button
-              onClick={() => setNotifOpen(!notifOpen)}
-              title="Notifications"
+              onClick={() => { if (window.confirm('Reset your score and all predictions?')) reset() }}
               style={{
-                position: 'relative',
-                background: notifOpen ? 'rgba(192,132,252,0.12)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${notifOpen ? 'rgba(192,132,252,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: 10,
-                width: 34, height: 34,
-                color: notifOpen ? 'var(--accent)' : 'var(--muted)',
-                fontSize: 16,
-                transition: 'all 0.2s',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: notifOpen ? '0 0 16px rgba(192,132,252,0.25)' : 'none',
+                padding: '8px 14px', borderRadius: 10, fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: 1,
+                color: 'var(--red)', background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)', cursor: 'pointer',
               }}
-              onMouseEnter={e => {
-                if (!notifOpen) {
-                  e.currentTarget.style.color = 'var(--accent)'
-                  e.currentTarget.style.borderColor = 'var(--border-hi)'
-                  e.currentTarget.style.background = 'rgba(192,132,252,0.08)'
-                }
-              }}
-              onMouseLeave={e => {
-                if (!notifOpen) {
-                  e.currentTarget.style.color = 'var(--muted)'
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-                }
-              }}
-            >
-              🔔
-              {unreadCount > 0 && (
-                <div style={{
-                  position: 'absolute', top: -5, right: -5,
-                  minWidth: 16, height: 16, borderRadius: 8,
-                  background: 'linear-gradient(135deg, #c084fc, #67e8f9)',
-                  color: '#0c0818',
-                  fontSize: 9, fontWeight: 800, fontFamily: 'var(--font-mono)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '0 4px',
-                  boxShadow: '0 0 10px rgba(192,132,252,0.6)',
-                }}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </div>
-              )}
-            </button>
-
-            {/* Reset */}
-            <button
-              onClick={() => { if (confirm('Reset your entire portfolio?')) resetPortfolio() }}
-              style={{
-                background: 'rgba(248,113,113,0.06)',
-                border: '1px solid rgba(248,113,113,0.2)',
-                borderRadius: 10,
-                padding: '7px 14px',
-                color: 'var(--red)',
-                fontSize: 11,
-                fontFamily: 'var(--font-mono)',
-                letterSpacing: 1,
-                fontWeight: 700,
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(248,113,113,0.15)'
-                e.currentTarget.style.borderColor = 'rgba(248,113,113,0.4)'
-                e.currentTarget.style.boxShadow = '0 0 14px rgba(248,113,113,0.15)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(248,113,113,0.06)'
-                e.currentTarget.style.borderColor = 'rgba(248,113,113,0.2)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              RESET
-            </button>
+            >RESET</button>
           </div>
         </div>
 
@@ -306,19 +130,17 @@ export default function Header({ tab, setTab, loading, onRefresh, notifOpen, set
               </button>
             ))}
           </div>
-          {lastUpdated && (
-            <div style={{
-              marginLeft: 'auto',
-              fontSize: 10,
-              color: 'var(--faint)',
-              fontFamily: 'var(--font-mono)',
-              letterSpacing: 0.5,
-            }}>
-              Updated {new Date(lastUpdated).toLocaleTimeString()}
-            </div>
-          )}
         </div>
       </div>
     </header>
+  )
+}
+
+function Stat({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '6px 14px', minWidth: 76 }}>
+      <div style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 2 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18, color }}>{value}</div>
+    </div>
   )
 }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Bar } from './forecast/types'
 
-export interface Quote { symbol: string; name: string; price: number; change: number; changePct: number; prevClose: number; marketOpen: boolean }
 export interface SearchResult { symbol: string; name: string; exchange: string; type: 'stock' | 'etf' }
 
 export class ApiError extends Error {
@@ -20,19 +19,7 @@ export async function searchSymbols(q: string): Promise<SearchResult[]> {
   return body.results
 }
 
-export async function fetchQuotes(symbols: string[]): Promise<Record<string, Quote>> {
-  const unique = [...new Set(symbols)].sort() // sorted so the CDN cache key is order-independent
-  const out: Record<string, Quote> = {}
-  for (let i = 0; i < unique.length; i += 8) {
-    const chunk = unique.slice(i, i + 8)
-    await rateLimit(chunk.length) // quotes cost 1 credit per symbol
-    const body = await getJson(`/api/quote?symbols=${chunk.join(',')}`)
-    Object.assign(out, body.quotes)
-  }
-  return out
-}
-
-// ponytail: per-tab limiter matching Twelve Data's free 8 credits/min (history and quotes are both
+// ponytail: per-tab limiter matching Twelve Data's free 8 credits/min (only history is
 // counted, one timestamp per credit; search is free); the CDN cache absorbs repeat visitors.
 // A shared server-side budget would need a store (e.g. Vercel KV) if traffic grows.
 const WINDOW_MS = 60_000
