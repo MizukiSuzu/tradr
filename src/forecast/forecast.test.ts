@@ -108,3 +108,57 @@ test('short history still returns 4 neutral-safe signals', () => {
   assert.equal(sigs.length, 4)
   assert.equal(sigs[0].tone, 'neutral')
 })
+
+import { buildTrackRecord } from './trackRecord.ts'
+import { summarizeForecast } from './summary.ts'
+import type { Bar } from './types.ts'
+
+function makeBars(n: number): Bar[] {
+  const closes = makeCloses(n)
+  const t0 = Date.UTC(2023, 0, 2)
+  return closes.map((close, i) => ({ date: new Date(t0 + i * 86400000).toISOString().slice(0, 10), close }))
+}
+
+test('track record has 12 ordered points with consistent totals', () => {
+  const tr = buildTrackRecord(makeBars(600), { paths: 500 })
+  assert.equal(tr.points.length, 12)
+  assert.ok(tr.points[0].anchorDate < tr.points[11].anchorDate)
+  assert.equal(tr.in95, tr.points.filter(p => p.in95).length)
+  assert.equal(tr.in68, tr.points.filter(p => p.in68).length)
+  assert.ok(tr.in68 <= tr.in95)
+})
+
+test('track record never reads data after the anchor', () => {
+  const bars = makeBars(600)
+  const a = buildTrackRecord(bars, { paths: 500 })
+  // Change the final bar: only the newest point's `actual` may change; every cone must not.
+  const changed = bars.map((b, i) => (i === bars.length - 1 ? { ...b, close: b.close * 3 } : b))
+  const b = buildTrackRecord(changed, { paths: 500 })
+  for (let i = 0; i < a.points.length; i++) {
+    assert.equal(a.points[i].p025, b.points[i].p025)
+    assert.equal(a.points[i].p975, b.points[i].p975)
+  }
+  assert.notEqual(a.points[11].actual, b.points[11].actual)
+})
+
+test('track record with short history returns fewer points', () => {
+  const tr = buildTrackRecord(makeBars(300), { paths: 300 })
+  assert.equal(tr.points.length, 2) // indices 278 and 257 are >= 252; 236 is not
+})
+
+test('summary is compact and mentions the key numbers', () => {
+  const bars = makeBars(600)
+  const closes = bars.map(b => b.close)
+  const s = summarizeForecast({
+    symbol: 'TEST', name: 'Test Corp', price: closes[closes.length - 1],
+    cone: buildCone(closes, 21, { paths: 500 }),
+    signals: computeSignals(closes),
+    track: buildTrackRecord(bars, { paths: 300 }),
+    position: { quantity: 3, avgBuyPrice: 90 },
+  })
+  assert.ok(s.length < 2000)
+  assert.match(s, /TEST/)
+  assert.match(s, /95%/)
+  assert.match(s, /inside/)
+  assert.match(s, /3 shares/)
+})
