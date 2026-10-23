@@ -21,25 +21,28 @@ export async function searchSymbols(q: string): Promise<SearchResult[]> {
 }
 
 export async function fetchQuotes(symbols: string[]): Promise<Record<string, Quote>> {
-  const unique = [...new Set(symbols)]
+  const unique = [...new Set(symbols)].sort() // sorted so the CDN cache key is order-independent
   const out: Record<string, Quote> = {}
   for (let i = 0; i < unique.length; i += 8) {
-    const body = await getJson(`/api/quote?symbols=${unique.slice(i, i + 8).join(',')}`)
+    const chunk = unique.slice(i, i + 8)
+    await rateLimit(chunk.length) // quotes cost 1 credit per symbol
+    const body = await getJson(`/api/quote?symbols=${chunk.join(',')}`)
     Object.assign(out, body.quotes)
   }
   return out
 }
 
-// ponytail: per-tab limiter matching Twelve Data's free 8 credits/min; the CDN cache absorbs
-// repeat visitors. A shared server-side budget would need a store (e.g. Vercel KV) if traffic grows.
+// ponytail: per-tab limiter matching Twelve Data's free 8 credits/min (history and quotes are both
+// counted, one timestamp per credit; search is free); the CDN cache absorbs repeat visitors.
+// A shared server-side budget would need a store (e.g. Vercel KV) if traffic grows.
 const WINDOW_MS = 60_000
 const MAX_PER_WINDOW = 8
 const starts: number[] = []
-async function rateLimit() {
+async function rateLimit(cost = 1) {
   for (;;) {
     const now = Date.now()
     while (starts.length && now - starts[0] > WINDOW_MS) starts.shift()
-    if (starts.length < MAX_PER_WINDOW) { starts.push(now); return }
+    if (starts.length + cost <= MAX_PER_WINDOW) { for (let i = 0; i < cost; i++) starts.push(now); return }
     await new Promise(r => setTimeout(r, WINDOW_MS - (now - starts[0]) + 50))
   }
 }
@@ -50,8 +53,14 @@ export function fetchHistory(symbol: string): Promise<Bar[]> {
   const key = symbol.toUpperCase()
   let p = historyCache.get(key)
   if (!p) {
+    const url = `/api/history?symbol=${encodeURIComponent(key)}`
     p = rateLimit()
-      .then(() => getJson(`/api/history?symbol=${encodeURIComponent(key)}`))
+      .then(() => getJson(url))
+      .catch(async e => {
+        if (!(e instanceof ApiError) || e.status !== 429) throw e
+        await rateLimit() // provider said slow down: wait for a fresh slot and retry once
+        return getJson(url)
+      })
       .then(body => body.bars as Bar[])
     p.catch(() => historyCache.delete(key)) // let a later call retry after an error
     historyCache.set(key, p)

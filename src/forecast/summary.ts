@@ -18,9 +18,9 @@ export function summarizeForecast(input: {
   const end = cone.bands[cone.horizon]
   const counts = toneCounts(signals)
   const lines = [
-    `Ticker: ${symbol} (${name}), last price ${usd(price)}.`,
+    `Ticker: ${symbol} (${name}), last quote ${usd(price)}, last daily close ${usd(cone.start)}.`,
     `Forecast horizon: ${cone.horizon} trading days. Median ${usd(end.p50)}; 68% range ${usd(end.p16)}-${usd(end.p84)}; 95% range ${usd(end.p025)}-${usd(end.p975)}.`,
-    `Chance of ending above today's price: ${(probAbove(cone, cone.start) * 100).toFixed(0)}%.`,
+    `Chance of ending above the last daily close (${usd(cone.start)}):${(probAbove(cone, cone.start) * 100).toFixed(0)}%.`,
     `Method: block-bootstrap Monte Carlo of the last year of daily returns.`,
     `Signals (${counts.bullish} bullish, ${counts.neutral} neutral, ${counts.bearish} bearish): ` +
       signals.map(s => `${s.label} [${s.tone}] - ${s.detail}`).join(' | '),

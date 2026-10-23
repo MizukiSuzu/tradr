@@ -10,6 +10,7 @@ import Ticker from './components/Ticker'
 import PortfolioTab from './components/PortfolioTab'
 import TradeModal from './components/TradeModal'
 import Toast from './components/Toast'
+import AnalystChat from './components/AnalystChat'
 import { Asset } from './types'
 
 export type Tab = 'watchlist' | 'portfolio' | 'history'
@@ -32,6 +33,7 @@ export default function App() {
   const [viewing, setViewing] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
   const [summary, setSummary] = useState<string | null>(null) // used by Task 8
+  const [quoted, setQuoted] = useState<Set<string>>(new Set()) // symbols with a live quote this session
 
   // Watch for triggered price alerts
   useEffect(() => {
@@ -68,6 +70,7 @@ export default function App() {
           changePct: q.changePct,
         })))
         updatePrices(Object.fromEntries(Object.values(quotes).map(q => [q.symbol, { price: q.price, change24h: q.change, changePct: q.changePct }])))
+        setQuoted(prev => new Set([...prev, ...Object.keys(quotes)]))
         setStale(false)
       } catch {
         setStale(true) // keep last known prices
@@ -112,7 +115,7 @@ export default function App() {
           </div>
         )}
         {viewing ? (
-          <StockPage symbol={viewing} onTrade={openTrade} onBack={() => setViewing(null)} onSummary={setSummary} />
+          <StockPage key={viewing} symbol={viewing} hasLiveQuote={quoted.has(viewing)}onTrade={openTrade} onBack={() => setViewing(null)} onSummary={setSummary} />
         ) : (
           <>
             {tab === 'watchlist' && <WatchlistTab onOpen={openSymbol} />}
@@ -130,6 +133,7 @@ export default function App() {
         />
       )}
       <NotificationDrawer open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <AnalystChat summary={summary} symbol={viewing} />
       <div style={{ position: 'fixed', bottom: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 10, zIndex: 9000 }}>
         {toasts.map(t => <Toast key={t.id} msg={t.msg} ok={t.ok} />)}
       </div>
@@ -295,7 +299,7 @@ function HistoryTab() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
         }}>📋</div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)', letterSpacing: 1 }}>NO TRADES YET</div>
-        <div style={{ fontSize: 13, color: 'var(--faint)' }}>Head to Markets to make your first move</div>
+        <div style={{ fontSize: 13, color: 'var(--faint)' }}>Open a ticker from the Watchlist or search to make your first trade.</div>
       </div>
     )
   }

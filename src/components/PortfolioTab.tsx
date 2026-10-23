@@ -396,7 +396,7 @@ export default function PortfolioTab({ onTrade }: Props) {
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
           }}>◈</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)', letterSpacing: 1 }}>NO POSITIONS</div>
-          <div style={{ fontSize: 13, color: 'var(--faint)' }}>Go to Markets to start building your portfolio</div>
+          <div style={{ fontSize: 13, color: 'var(--faint)' }}>Open a ticker from the Watchlist or search to make your first trade.</div>
         </div>
       ) : (
         <>

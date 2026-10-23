@@ -1,127 +1,88 @@
 # TRADR
 
-A browser-based paper trading simulator built with React, TypeScript, and Vite. Trade crypto, stocks, bonds, and ETFs with a simulated $100,000 starting balance — no real money involved.
+Market foresight and paper trading for any US stock or ETF. TRADR pulls real daily prices, projects where a price is likely to be in a week, a month or three months as probability ranges, and shows how well those projections held up in the past. Practice trading with a simulated $100,000. No real money involved.
 
----
+**Live demo:** https://tradr-ashy.vercel.app
 
 ## Features
 
-- **Live crypto prices** via CoinGecko, refreshed every 30 seconds
-- **Simulated stock & ETF prices** powered by Geometric Brownian Motion with sector correlations and GARCH-lite volatility clustering
-- **Simulated bond prices** using an Ornstein-Uhlenbeck mean-reversion process
-- **Market and limit orders** — queue buys/sells to trigger at a target price
-- **Price alerts** — get notified when any asset crosses a threshold you set
-- **Fractional shares** — buy partial units of any asset
-- **Portfolio overview** — equity curve chart, allocation pie, unrealized P&L per position
-- **Trade history** with realized P&L shown on every sell
-- **AI trader agents** — five autonomous traders with distinct personalities that trade in real time. Chat with any of them (powered by Groq / Llama 3)
-- **Agent leaderboard** — see how you rank against the bots
-- **Scrolling ticker** across the top showing live prices
-- **Persistent state** via localStorage — your portfolio survives page refresh
+- **Any US ticker**: search stocks and ETFs; real prices via Twelve Data (quotes delayed, refreshed every 5 minutes)
+- **Probability cone**: 5,000 simulated paths from the stock's own last year of daily returns (block bootstrap), shown as 68% and 95% ranges, plus "chance above $X"
+- **Signals**: trend (50/200-day averages, golden/death crosses), 20-day momentum, RSI(14), volatility regime, each explained in one sentence
+- **Track record**: for each of the last 12 months, a cone built only from data available then, compared with where the price actually landed
+- **Paper trading**: market and limit orders, price alerts, fractional shares, portfolio charts, realized P&L
+- **TRADR Analyst**: AI chat (Groq) that explains the numbers on screen; it never recommends trades
 
----
+Forecasts are statistical projections from past prices, not financial advice.
 
-## Tech Stack
+## Tech stack
 
 | Tool | Role |
 |---|---|
-| React + TypeScript | UI and type safety |
-| Vite | Dev server and build |
-| Zustand + persist | Global state with localStorage persistence |
-| Recharts | Charts (portfolio equity curve, allocation pie) |
-| CoinGecko API | Live crypto prices |
-| Groq API (Llama 3.1 8B) | AI trader agent chat |
+| React 18 + TypeScript + Vite | UI and build |
+| Zustand + persist | Portfolio state in localStorage |
+| Recharts | Price, cone and track-record charts |
+| Vercel functions (`api/`) | Server-side proxies that keep API keys off the client, with CDN caching |
+| Twelve Data API | Symbol search, delayed quotes, daily history |
+| Groq API | Analyst chat |
 
----
-
-## Getting Started
+## Getting started
 
 ```bash
-# Install dependencies
 npm install
+```
 
-# Create your .env file with your Groq API key
-echo "GROQ_API_KEY=your_key_here" > .env
+Create `.env` with:
 
-# Start dev server
+```
+TWELVEDATA_API_KEY=your_twelve_data_key
+GROQ_API_KEY=your_groq_key
+```
+
+Free keys: [twelvedata.com](https://twelvedata.com), [console.groq.com](https://console.groq.com). Then:
+
+```bash
 npm run dev
 ```
 
-Get a free Groq API key at [console.groq.com](https://console.groq.com). Without it the chat feature will show a connection error, but everything else works fine.
+The Vite dev server also serves the `api/` functions, so no Vercel CLI is needed locally.
 
----
+```bash
+npm test
+```
 
-## Project Structure
+runs the forecast engine tests with Node's built-in test runner.
+
+## Project structure
 
 ```
 api/
-└── chat.ts               # Serverless proxy to Groq (keeps the API key off the client)
+├── _twelvedata.ts       # Shared upstream fetch + validation (not a route)
+├── search.ts            # GET /api/search?q=
+├── quote.ts             # GET /api/quote?symbols=
+├── history.ts           # GET /api/history?symbol=
+└── chat.ts              # POST /api/chat (Groq)
 src/
-├── main.tsx              # App entry point
-├── App.tsx               # Root layout, price refresh loop, tab routing
-├── types.ts              # TypeScript interfaces (Asset, Trade, Holding, etc.)
-├── assets.ts             # Asset registry — all tradeable instruments
-├── store.ts              # Zustand store — portfolio state, buy/sell, alerts, limit orders
-├── prices.ts             # CoinGecko fetch + GBM stock engine + O-U bond engine
-├── index.css             # Global styles and CSS variables
-├── agents/
-│   ├── agentTypes.ts     # Agent type definitions
-│   ├── agentPersonalities.ts  # The five trader characters + Sensei
-│   └── agentStore.ts     # Agent state, trading logic, Groq chat integration
-└── components/
-    ├── Header.tsx         # Top nav bar
-    ├── Ticker.tsx         # Scrolling price ticker
-    ├── MarketTab.tsx      # Asset list with search and filters
-    ├── PortfolioTab.tsx   # Holdings, charts, pending orders
-    ├── TradersTab.tsx     # AI agents, leaderboard, chat
-    ├── TradeModal.tsx     # Buy/sell modal with market and limit order modes
-    ├── Loader.tsx         # Initial loading screen
-    └── Toast.tsx          # Trade confirmation / alert toasts
+├── forecast/            # Pure TS engine: cone, signals, track record, chat summary + tests
+├── data.ts              # Client fetchers, history cache, rate limiter
+├── store.ts             # Portfolio, orders, alerts, watchlist
+└── components/          # Watchlist, StockPage, Portfolio, TradeModal, AnalystChat, …
 ```
 
----
+## How the forecast works
 
-## The Simulation Engine
+1. Take the last 252 daily log returns.
+2. Build 5,000 future paths by stitching together random 5-day blocks of those real returns. Blocks keep calm and volatile stretches together, and real returns keep fat tails a bell curve would miss.
+3. At each future day, read the 2.5th, 16th, 50th, 84th and 97.5th percentiles: the median and the 68% and 95% ranges.
+4. Track record: repeat steps 1-3 at 12 past monthly dates (with fewer paths per anchor) using only data up to each date, then check where the price really was 21 trading days later.
 
-Stock and ETF prices are simulated using **Geometric Brownian Motion**:
+Results are seeded by ticker and date, so the same data gives the same cone.
 
-```
-S(t+dt) = S(t) × exp((μ - σ²/2)·dt + σ·√dt·Z)
-```
+## Environment variables
 
-Where each asset has calibrated annual volatility (σ) and drift (μ). Realistic touches include:
-
-- **Sector correlation** — tech stocks co-move via shared random shocks
-- **GARCH-lite volatility clustering** — big moves push vol higher temporarily
-- **Intraday vol curve** — volatility peaks at open and close, dips at midday
-
-Bond prices use an **Ornstein-Uhlenbeck** mean-reverting process, giving them the stable, low-vol behaviour bonds actually have.
-
----
-
-## AI Traders
-
-Five agents trade autonomously every 30 seconds alongside you:
-
-| Agent | Style | Trades |
+| Name | Where | Used by |
 |---|---|---|
-| 🦍 Chad Degen | Buys every dip, never sells | Crypto only, high frequency |
-| 👓 Margaret Vale | Value investor, takes profits | Bonds + ETFs, rare trades |
-| 📊 Dev Sharma | Quant-driven, diversified | Stocks, medium frequency |
-| 🌙 Luna Park | Impulsive, second-guesses everything | Crypto + stocks |
-| 🚀 Rex Momentum | Pure trend-following | Stocks + crypto |
-| 🧧 Sensei Stocks | Market sage — observes, never trades | — |
+| `TWELVEDATA_API_KEY` | `.env` and Vercel | `api/search.ts`, `api/quote.ts`, `api/history.ts` |
+| `GROQ_API_KEY` | `.env` and Vercel | `api/chat.ts` |
 
-You can chat with any of them. Each responds in character with awareness of their current portfolio and live market conditions.
-
----
-
-## Environment Variables
-
-```
-GROQ_API_KEY=your_groq_api_key
-```
-
-The key is only read server-side. Chat requests go to `/api/chat` (`api/chat.ts`), a Vercel serverless function that forwards them to Groq; in development the Vite dev server serves the same handler. On Vercel, set `GROQ_API_KEY` in the project's environment variables. Don't use a `VITE_` prefix: Vite inlines those into the public client bundle.
-
-**Never commit your `.env` file.** It's in `.gitignore` by default.
+Keys are read only on the server. Don't prefix them with `VITE_`: Vite would inline them into the public bundle.

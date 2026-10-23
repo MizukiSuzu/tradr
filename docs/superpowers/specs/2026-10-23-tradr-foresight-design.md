@@ -25,8 +25,8 @@ Rebuild TRADR around real US stock data and statistical forecasting. Users look 
 Browser (React + Zustand)
  ├─ search   ──► /api/search?q=nvd           Twelve Data /symbol_search   s-maxage=86400
  ├─ quote    ──► /api/quote?symbols=A,B      Twelve Data /quote           s-maxage=300
- ├─ history  ──► /api/history?symbol=NVDA    Twelve Data /time_series     cached until next market close
- │                                           (interval=1day, outputsize=500)
+ ├─ history  ──► /api/history?symbol=NVDA    Twelve Data /time_series     s-maxage=21600
+ │                                           (interval=1day, outputsize=520)
  ├─ src/forecast/  pure functions on the history: cone, signals, track record
  └─ chat     ──► /api/chat                   Groq (existing), now receives a forecast summary
 ```
@@ -58,7 +58,7 @@ Pure functions: arrays of `{ date, close }` in, plain objects out. No React, no 
 - **Watchlist tab** (replaces Market) — saved tickers with last close, day change, sparkline, signal counts. Default: SPY, AAPL, NVDA, MSFT, TSLA, AMZN. Add/remove persisted. Built from cached daily history; histories load in batches of at most 8 per minute.
 - **Stock page** — price chart (Recharts) with the cone extending into the future and a horizon toggle; probability line; four signal cards; track-record chart with past cones over the actual price; Buy/Sell opening the existing `TradeModal`; disclaimer ("Statistical projection from past prices. Not financial advice.").
 - **Portfolio tab** — unchanged features (holdings, equity curve, allocation, trade history), valued at real quotes. Delayed quotes only fetched for the viewed ticker and held positions.
-- **Analyst chat** — `FloatingChat` reused as a single assistant. Each request includes a compact JSON summary of the viewed ticker (cone percentiles at horizon, probabilities, signals, track record totals, the user's position). System prompt: explain what the numbers mean, never recommend specific trades or give personal financial advice, say when it doesn't know. `api/chat.ts` limits stay; the summary counts toward the 8,000-char message limit.
+- **Analyst chat** — `AnalystChat.tsx` (new, replaces `FloatingChat`) is the single assistant. Each request includes a compact JSON summary of the viewed ticker (cone percentiles at horizon, probabilities, signals, track record totals, the user's position). System prompt: explain what the numbers mean, never recommend specific trades or give personal financial advice, say when it doesn't know. `api/chat.ts` limits stay; the summary counts toward the 8,000-char message limit.
 
 ### State
 
@@ -68,13 +68,13 @@ Pure functions: arrays of `{ date, close }` in, plain objects out. No React, no 
 
 ## Files
 
-- Add: `api/search.ts`, `api/quote.ts`, `api/history.ts`, `src/forecast/{cone,signals,trackRecord,rng}.ts`, `src/forecast/forecast.test.ts`, `src/components/StockPage.tsx`, `src/components/WatchlistTab.tsx`.
-- Change: `vite.config.ts` (generic dev API middleware), `store.ts`, `types.ts`, `App.tsx`, `Header.tsx`, `PortfolioTab.tsx`, `TradeModal.tsx`, `Ticker.tsx` (scrolls watchlist last closes from cached history; no extra quote calls), `FloatingChat.tsx` (system prompt stays client-built, as today), `README.md`. `api/chat.ts` is unchanged.
-- Remove: `src/prices.ts`, `src/assets.ts`, `src/agents/`, `src/components/TradersTab.tsx`, `src/components/MarketTab.tsx`.
+- Add: `api/search.ts`, `api/quote.ts`, `api/history.ts`, `api/_twelvedata.ts`, `src/data.ts`, `src/forecast/{cone,signals,trackRecord,rng,types,summary}.ts`, `src/forecast/forecast.test.ts`, `src/components/StockPage.tsx`, `src/components/WatchlistTab.tsx`, `src/components/SymbolSearch.tsx`, `src/components/AnalystChat.tsx`.
+- Change: `vite.config.ts` (generic dev API middleware), `store.ts`, `types.ts`, `App.tsx`, `Header.tsx`, `PortfolioTab.tsx`, `TradeModal.tsx`, `Ticker.tsx` (scrolls watchlist last closes from cached history; no extra quote calls), `README.md`. `api/chat.ts` is unchanged.
+- Remove: `src/prices.ts`, `src/assets.ts`, `src/agents/`, `src/components/TradersTab.tsx`, `src/components/MarketTab.tsx`, `src/components/FloatingChat.tsx`.
 
 ## Testing
 
-- `src/forecast/forecast.test.ts`, run with `node --test src/forecast/forecast.test.ts` (Node 24 runs TypeScript directly; no new dependency). Checks:
+- `src/forecast/forecast.test.ts`, run with `npm test` (runs `node --test "src/forecast/*.test.ts"`; Node 24 runs TypeScript directly; no new dependency). Checks:
   - Cone percentiles are ordered at every step; a constant price series gives a zero-width cone.
   - Same seed gives identical output.
   - RSI matches a hand-computed value on a fixed series; SMA cross detection on a constructed series.

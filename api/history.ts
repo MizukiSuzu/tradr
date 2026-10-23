@@ -6,7 +6,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const symbol = (query(req).get('symbol') ?? '').toUpperCase()
   if (!TICKER.test(symbol)) return send(res, 400, { error: 'Invalid symbol' })
 
-  const r = await td('time_series', { symbol, interval: '1day', outputsize: '500' })
+  const r = await td('time_series', { symbol, interval: '1day', outputsize: '520' })
   if (r.error) return send(res, r.status, { error: r.error })
 
   const bars = (r.data.values ?? [])

@@ -21,12 +21,13 @@ const TONE_COLOR = { bullish: 'var(--green)', neutral: 'var(--muted)', bearish: 
 
 interface Props {
   symbol: string
+  hasLiveQuote: boolean
   onTrade: (asset: Asset, type: 'buy' | 'sell') => void
   onBack: () => void
   onSummary: (s: string | null) => void
 }
 
-export default function StockPage({ symbol, onTrade, onBack, onSummary }: Props) {
+export default function StockPage({ symbol, hasLiveQuote, onTrade, onBack, onSummary }: Props) {
   const { bars, error, loading } = useHistory(symbol)
   const asset = useStore(s => s.assets.find(a => a.id === symbol))
   const holding = useStore(s => s.holdings.find(h => h.assetId === symbol))
@@ -74,7 +75,7 @@ export default function StockPage({ symbol, onTrade, onBack, onSummary }: Props)
   const targetNum = parseFloat(target)
   const counts = toneCounts(signals)
   const horizonLabel = HORIZONS.find(h => h.days === horizon)!.label
-  const hasQuote = !!asset && asset.price > 0
+  const hasQuote = hasLiveQuote && !!asset && asset.price > 0
   const tradeAsset: Asset = asset ?? { id: symbol, symbol, name, class: 'stock', price, change24h: 0, changePct: 0 }
 
   return (
@@ -123,7 +124,7 @@ export default function StockPage({ symbol, onTrade, onBack, onSummary }: Props)
         <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.6 }}>
           In {horizonLabel}: median <b>{usd(end.p50)}</b>, 68% chance between <b>{usd(end.p16)}</b> and <b>{usd(end.p84)}</b>,
           95% chance between <b>{usd(end.p025)}</b> and <b>{usd(end.p975)}</b>.{' '}
-          <b>{(upProb * 100).toFixed(0)}%</b> chance of ending above today's price.
+          <b>{(upProb * 100).toFixed(0)}%</b> chance of ending above the last close ({usd(cone.start)}).
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13, color: 'var(--muted)' }}>
           Chance above

@@ -26,5 +26,5 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       marketOpen: Boolean(q.is_market_open),
     }
   }
-  send(res, 200, { quotes }, 300)
+  send(res, 200, { quotes }, 300, 60)
 }

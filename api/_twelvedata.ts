@@ -3,11 +3,11 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 
 export const TICKER = /^[A-Z0-9.\-]{1,10}$/
 
-export function send(res: ServerResponse, status: number, body: unknown, cacheSeconds = 0) {
+export function send(res: ServerResponse, status: number, body: unknown, cacheSeconds = 0, swr = 86400) {
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json')
   if (status === 200 && cacheSeconds > 0) {
-    res.setHeader('Cache-Control', `public, s-maxage=${cacheSeconds}, stale-while-revalidate=86400`)
+    res.setHeader('Cache-Control', `public, s-maxage=${cacheSeconds}, stale-while-revalidate=${swr}`)
   }
   res.end(JSON.stringify(body))
 }
