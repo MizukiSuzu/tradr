@@ -40,9 +40,8 @@ A browser-based paper trading simulator built with React, TypeScript, and Vite. 
 # Install dependencies
 npm install
 
-# Create your .env file
-cp .env.example .env
-# Add your Groq API key: VITE_GROQ_API_KEY=your_key_here
+# Create your .env file with your Groq API key
+echo "GROQ_API_KEY=your_key_here" > .env
 
 # Start dev server
 npm run dev
@@ -55,6 +54,8 @@ Get a free Groq API key at [console.groq.com](https://console.groq.com). Without
 ## Project Structure
 
 ```
+api/
+└── chat.ts               # Serverless proxy to Groq (keeps the API key off the client)
 src/
 ├── main.tsx              # App entry point
 ├── App.tsx               # Root layout, price refresh loop, tab routing
@@ -118,7 +119,9 @@ You can chat with any of them. Each responds in character with awareness of thei
 ## Environment Variables
 
 ```
-VITE_GROQ_API_KEY=your_groq_api_key
+GROQ_API_KEY=your_groq_api_key
 ```
+
+The key is only read server-side. Chat requests go to `/api/chat` (`api/chat.ts`), a Vercel serverless function that forwards them to Groq; in development the Vite dev server serves the same handler. On Vercel, set `GROQ_API_KEY` in the project's environment variables. Don't use a `VITE_` prefix: Vite inlines those into the public client bundle.
 
 **Never commit your `.env` file.** It's in `.gitignore` by default.

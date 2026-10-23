@@ -329,17 +329,10 @@ export const useAgentStore = create<AgentStore>()(
         }))
 
         try {
-          const apiKey = (import.meta as any).env?.VITE_GROQ_API_KEY ?? ''
-          const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'openai/gpt-oss-20b',
-              max_tokens: 400,
-              reasoning_effort: 'low',
               messages: [
                 { role: 'system', content: systemPrompt },
                 ...messages,
