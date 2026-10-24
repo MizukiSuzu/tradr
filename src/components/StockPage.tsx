@@ -104,7 +104,18 @@ export default function StockPage({ symbol, onBack, onSummary, onResolved }: Pro
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13, color: 'var(--muted)' }}>
           Chance above
-          <div style={{ width: 150 }}><NumberInput value={target} onChange={setTarget} placeholder="target $" /></div>
+          <div style={{ width: 150 }}>
+            <NumberInput
+              value={target}
+              onChange={setTarget}
+              placeholder="target $"
+              fontSize={13}
+              inputStyle={{
+                width: '100%', minWidth: 0, padding: '7px 40px 7px 10px', borderRadius: 9,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
+              }}
+            />
+          </div>
           {targetNum > 0 && <b style={{ color: 'var(--text)' }}>{(probAbove(cone, targetNum) * 100).toFixed(0)}%</b>}
         </div>
         <CallPanel symbol={symbol} horizon={horizon} pUp={upProb} startDate={last.date} startClose={last.close} />
