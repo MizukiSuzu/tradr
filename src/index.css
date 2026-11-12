@@ -147,3 +147,18 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+/* Phone layout: let the header, tabs and watchlist rows fit a 375px screen */
+.wl-row { grid-template-columns: 1fr 120px 110px 190px 28px; }
+.short-label { display: none; }
+@media (max-width: 700px) {
+  .hdr-top { flex-wrap: wrap; row-gap: 10px; }
+  .hdr-sub { display: none; }
+  .hdr-search { order: 3; flex: 1 1 100% !important; max-width: none !important; margin: 0 !important; }
+  .hdr-stat { min-width: 0 !important; padding: 5px 9px !important; }
+  .hdr-tab { padding: 8px 12px !important; }
+  .wl-row { grid-template-columns: minmax(0, 1fr) auto 28px; row-gap: 6px; }
+  .wl-spark { display: none; }
+  .wl-counts { grid-column: 1 / -1; grid-row: 2; }
+  .long-label { display: none; }
+  .short-label { display: inline; }
+}

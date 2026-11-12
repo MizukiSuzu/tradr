@@ -19,7 +19,8 @@ export default async function handler(req: IncomingMessage & { body?: any }, res
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) return send(res, 500, JSON.stringify({ error: 'GROQ_API_KEY not set' }))
 
-  const messages = req.body?.messages
+  let messages: any
+  try { messages = req.body?.messages } catch { /* Vercel's req.body getter throws on malformed JSON */ }
   const valid =
     Array.isArray(messages) &&
     messages.length > 0 &&
@@ -41,7 +42,7 @@ export default async function handler(req: IncomingMessage & { body?: any }, res
       model: 'openai/gpt-oss-20b',
       max_tokens: 400,
       reasoning_effort: 'low',
-      messages: messages.map(m => ({ role: m.role, content: m.content })),
+      messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
     }),
   })
 

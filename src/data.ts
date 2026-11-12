@@ -10,8 +10,15 @@ export class ApiError extends Error {
 async function getJson(url: string): Promise<any> {
   const r = await fetch(url)
   const body = await r.json().catch(() => ({}))
-  if (!r.ok) throw new ApiError(body.error ?? `Request failed (${r.status})`, r.status)
+  if (!r.ok) throw new ApiError(friendlyError(r.status), r.status)
   return body
+}
+
+// Upstream messages are long and markdown-formatted; show short plain text instead.
+function friendlyError(status: number) {
+  if (status === 429) return 'Data limit reached. Try again in a minute.'
+  if (status === 400 || status === 404) return 'No data for this ticker.'
+  return `Could not load data (${status}). Try again later.`
 }
 
 export async function searchSymbols(q: string): Promise<SearchResult[]> {

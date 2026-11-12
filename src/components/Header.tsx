@@ -40,7 +40,7 @@ export default function Header({ tab, setTab, onSelectSymbol }: Props) {
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
         {/* Top row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 12px' }}>
+        <div className="hdr-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 12px' }}>
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
@@ -60,12 +60,12 @@ export default function Header({ tab, setTab, onSelectSymbol }: Props) {
             }}>
               TRADR
             </span>
-            <div style={{
+            <div className="hdr-sub" style={{
               width: 1, height: 18,
               background: 'var(--border)',
               margin: '0 4px',
             }} />
-            <span style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', letterSpacing: 0.5 }}>
+            <span className="hdr-sub" style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)', letterSpacing: 0.5 }}>
               Market Foresight
             </span>
           </div>
@@ -96,6 +96,7 @@ export default function Header({ tab, setTab, onSelectSymbol }: Props) {
             {tabs.map(t => (
               <button
                 key={t.id}
+                className="hdr-tab"
                 onClick={() => setTab(t.id)}
                 style={{
                   padding: '8px 22px',
@@ -138,7 +139,7 @@ export default function Header({ tab, setTab, onSelectSymbol }: Props) {
 
 function Stat({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '6px 14px', minWidth: 76 }}>
+    <div className="hdr-stat" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '6px 14px', minWidth: 76 }}>
       <div style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 2 }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18, color }}>{value}</div>
     </div>

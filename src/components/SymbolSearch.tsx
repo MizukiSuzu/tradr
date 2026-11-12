@@ -5,14 +5,16 @@ export default function SymbolSearch({ onSelect }: { onSelect: (r: SearchResult)
   const [q, setQ] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [noMatch, setNoMatch] = useState(false)
 
   useEffect(() => {
     const term = q.trim()
+    setNoMatch(false)
     if (term.length < 1) { setResults([]); setError(null); return }
     let alive = true
     const t = setTimeout(() => {
       searchSymbols(term)
-        .then(r => { if (alive) { setResults(r); setError(null) } })
+        .then(r => { if (alive) { setResults(r); setError(null); setNoMatch(r.length === 0) } })
         .catch(e => { if (alive) setError(e.message) })
     }, 300)
     return () => { alive = false; clearTimeout(t) }
@@ -21,7 +23,7 @@ export default function SymbolSearch({ onSelect }: { onSelect: (r: SearchResult)
   const pick = (r: SearchResult) => { onSelect(r); setQ(''); setResults([]) }
 
   return (
-    <div style={{ position: 'relative', flex: 1, maxWidth: 320, margin: '0 16px' }}>
+    <div className="hdr-search" style={{ position: 'relative', flex: 1, maxWidth: 320, margin: '0 16px' }}>
       <input
         value={q}
         onChange={e => setQ(e.target.value)}
@@ -34,12 +36,13 @@ export default function SymbolSearch({ onSelect }: { onSelect: (r: SearchResult)
           color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13,
         }}
       />
-      {(results.length > 0 || error) && (
+      {(results.length > 0 || error || noMatch) && (
         <div style={{
           position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 200,
           background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden',
         }}>
           {error && <div style={{ padding: 10, fontSize: 12, color: 'var(--red)' }}>{error}</div>}
+          {noMatch && !error && <div role="status" style={{ padding: 10, fontSize: 12, color: 'var(--muted)' }}>No US stocks or ETFs match "{q.trim()}".</div>}
           {results.map(r => (
             <button key={`${r.symbol}-${r.exchange}`} onClick={() => pick(r)} style={{
               display: 'flex', justifyContent: 'space-between', width: '100%', padding: '9px 12px',

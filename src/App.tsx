@@ -56,7 +56,7 @@ export default function App() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header tab={tab} setTab={t => { setViewing(null); setTab(t) }} onSelectSymbol={onSelectSymbol} />
       <Ticker />
-      <main style={{ flex: 1, maxWidth: 1200, margin: '0 auto', width: '100%', padding: '0 20px 60px' }}>
+      <main style={{ flex: 1, maxWidth: 1200, margin: '0 auto', width: '100%', padding: '0 20px 96px' }}>
         {viewing ? (
           <StockPage key={viewing} symbol={viewing} onBack={() => setViewing(null)} onSummary={setSummary} onResolved={announce} />
         ) : (

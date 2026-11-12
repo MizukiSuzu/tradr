@@ -49,19 +49,20 @@ function Row({ symbol, onOpen }: { symbol: string; onOpen: (s: string) => void }
       onKeyDown={e => {
         if (e.key === 'Enter' || e.key === ' ') { if (e.key === ' ') e.preventDefault(); onOpen(symbol) }
       }}
+      className="wl-row"
       style={{
-        display: 'grid', gridTemplateColumns: '1fr 120px 110px 170px 28px', alignItems: 'center', gap: 16,
+        display: 'grid', alignItems: 'center', columnGap: 16,
         padding: '14px 18px', background: 'rgba(22,16,43,0.7)', border: '1px solid var(--border)',
         borderRadius: 12, cursor: 'pointer',
       }}
     >
-      <div>
+      <div style={{ minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 15, fontFamily: 'var(--font-mono)' }}>{symbol}</div>
-        <div style={{ fontSize: 11, color: 'var(--faint)', fontFamily: 'var(--font-mono)' }}>
+        <div style={{ fontSize: 11, color: error ? 'var(--red)' : 'var(--faint)', fontFamily: 'var(--font-mono)' }}>
           {loading ? 'Loading…' : error ? error : `Close ${view?.date}`}
         </div>
       </div>
-      <div style={{ height: 36 }}>
+      <div className="wl-spark" style={{ height: 36 }}>
         {view && (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={view.spark}>
@@ -77,7 +78,7 @@ function Row({ symbol, onOpen }: { symbol: string; onOpen: (s: string) => void }
           {view ? `${up ? '▲' : '▼'} ${Math.abs(view.changePct).toFixed(2)}%` : ''}
         </div>
       </div>
-      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>
+      <div className="wl-counts" style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
         {view && <>
           <span style={{ color: 'var(--green)' }}>{view.counts.bullish} bull</span> ·{' '}
           <span>{view.counts.neutral} neutral</span> ·{' '}

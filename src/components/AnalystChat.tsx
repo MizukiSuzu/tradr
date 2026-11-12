@@ -54,10 +54,10 @@ export default function AnalystChat({ summary, symbol }: { summary: string | nul
   }
 
   return (
-    <div style={{ position: 'fixed', bottom: 24, left: 24, zIndex: 7000 }}>
+    <div style={{ position: 'fixed', bottom: 16, left: 16, zIndex: 7000 }}>
       {open && (
         <div style={{
-          width: 360, height: 460, marginBottom: 12, display: 'flex', flexDirection: 'column',
+          width: 'min(360px, calc(100vw - 32px))', height: 'min(460px, calc(100vh - 140px))', marginBottom: 12, display: 'flex', flexDirection: 'column',
           background: 'linear-gradient(180deg, #1a1035 0%, #110d24 100%)', border: '1px solid rgba(148,100,255,0.25)',
           borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflow: 'hidden',
         }}>
@@ -101,11 +101,11 @@ export default function AnalystChat({ summary, symbol }: { summary: string | nul
         onClick={() => setOpen(o => !o)}
         aria-label={open ? 'Close analyst chat' : 'Open analyst chat'}
         style={{
-          padding: '12px 18px', borderRadius: 999, border: '1px solid rgba(192,132,252,0.4)',
+          padding: '10px 16px', borderRadius: 999, border: '1px solid rgba(192,132,252,0.4)',
           background: 'linear-gradient(135deg, #a78bfa 0%, #67e8f9 100%)', color: '#0c0818', fontWeight: 800, cursor: 'pointer',
           boxShadow: '0 8px 24px rgba(167,139,250,0.35)',
         }}
-      >{open ? 'Close' : 'Ask the Analyst'}</button>
+      >{open ? 'Close' : <><span className="long-label">Ask the Analyst</span><span className="short-label">Ask</span></>}</button>
     </div>
   )
 }

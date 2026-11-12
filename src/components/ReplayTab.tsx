@@ -107,7 +107,7 @@ export default function ReplayTab() {
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div role="status" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 18, color: result.status === 'won' ? 'var(--green)' : 'var(--red)' }}>
-                {result.status === 'won' ? `+${result.points} · correct` : '0 · missed'}
+                {result.status === 'won' ? `+${result.points} · correct` : '0 · missed'}{' '}
                 <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>
                   {usd(result.startClose)} → {usd(result.endClose!)} on {result.endDate}
                 </span>
